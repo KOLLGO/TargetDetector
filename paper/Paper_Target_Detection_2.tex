@@ -1,0 +1,193 @@
+\documentclass[a4paper, fontsize = 9pt, twocolumn, abstract = true]{scrartcl}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{blindtext}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,amsopn}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usetikzlibrary{datavisualization}
+\usetikzlibrary{datavisualization.formats.functions}
+\usepackage[backend=biber, 
+style = apa,
+natbib = true,
+url=false,
+doi = true,
+sorting = nyt
+]{biblatex}
+\hyphenation{Re-le-vanz-ent-schei-dung } % Beispiel für Trennung eines unbekannten Wortes
+\addbibresource{literature.bib}
+%opening
+\title{Latex und Koma Script}
+\subtitle{Eine Einführung}
+\author{Michael Spranger\textsuperscript{*}, Max Mustermann}
+\date{}
+\begin{document}
+
+\maketitle
+%\tableofcontents
+\begin{abstract}
+\textsf{Das ist mein professioneller Abstract.}
+\textrm{Das ist mein professioneller Abstract.}
+\blindtext[1]
+\par\vskip\baselineskip\noindent
+\textbf{Keywords:} machine learning, graph theory, optimization.
+\end{abstract}
+
+\section{Einführung}
+Hier kommt ein Zitat \citep{Alves-Pinto2021}.
+Im direkten Vergleich schneidet der Ansatz von \citet{Ishihara2014} besser ab.
+ 
+
+
+\section{Umgebungen}
+Manchmal möchte man ein paar Sachen aufzählen, z.B.:
+\begin{itemize}
+	\item[-] Baum
+	\item Blatt
+	\item Ast
+\end{itemize}
+%
+Wenn die Reihenfolge eine Rolle spielt, löst man das so:
+\begin{enumerate}
+	\item erster Schritt
+	\item zweiter Schritt
+	\item dritter Schritt
+\end{enumerate}
+%
+Mitunter muss man ein paar Dinge definieren oder erläutern. In diesen Fällen hilft möglicherweise die folgende Umgebung weiter:
+\begin{description}
+	\item[Graph] Ein Graph ist ...
+	\item[Vertex] Ein Vertex ist ...
+\end{description}
+\section{Formeln}
+Inline werden Formeln einfach wie folgt platziert: $score = \beta_0x_0+\beta_1x_1+...$. Als abgesetzte Formel würde das Ganze wie in \autoref{eq:score} aussehen.
+\begin{equation}\label{eq:score}
+	score = \sum_{i=0}^{n}\beta_ix_i
+\end{equation}
+
+Hilfe für Formeln aus dem \texttt{amsmath}-Paket:
+\begin{align}
+	a &= \alpha * b + c\\
+	b &= \theta * \sum_{w\in V} p(w|\theta_B)
+\end{align}
+
+\begin{multline}
+	KL_{max}(M^+||M^-) = \log_2\left( \frac{|M|}{|M^+|} \right)\\ + \log_2\left( \frac{|M|}{|M^-|} \right)
+\end{multline}
+\section{Überschriften erste Ebene}
+\subsection{Überschriften zweite Ebene}
+\blindtext[1]
+\subsubsection{Überschriften dritte Ebene}
+\blindtext[1]
+\paragraph{Benannter Absatz}
+\blindtext[1]
+
+\section{Tabellen}\label{sec:Tabellen}
+Eine einfache Tabelle (siehe \autoref{tab:2}):
+
+\begin{table}[h]
+	\caption{Tabellenüberschrift}\label{tab:2}
+	\centering
+	\begin{tabular}{c|c|c}
+	Spalte 1  & Spalte 2 & Spalte 3\\
+	\hline\hline
+	1 & 2 & 3\\
+	4 & 5 & 6\\
+\end{tabular}
+\end{table}
+
+In \autoref{tab:1} wird gezeigt, wie man bei einem zweispaltigen Layout eine Tabelle über die gesamte Seitenbreite einrichten kann.
+\begin{table*}[t]
+	\centering
+	\caption{Comparison of majority occurrences, for different thresholds, with an unweighted and a weighted approach.}\label{tab:1}
+		\begin{tabular}{@{}cccccccccccc@{}} 
+			\toprule
+			\multirow{2}{*}{\textbf{Threshold}} & \multicolumn{2}{c}{\textbf{is Music}} && \multicolumn{2}{c}{\textbf{Uncertain}} && \multicolumn{2}{c}{\textbf{not Music}}  && \multicolumn{2}{c}{\textbf{No Majority}} \\  [0.5ex] 
+			\cmidrule{2-3}\cmidrule{5-6}\cmidrule{8-9}\cmidrule{11-12}
+			& \text{UW} & \text{W} && \text{UW} & \text{W} && \text{UW} & \text{W} && \text{UW} & \text{W} \\
+			\midrule 
+			0.5 & 1534 & 1560 && 3 & 6 && 1344 & 1357 && 119 & 77\\ 
+			
+			0.55 & 1456 & 1481 && 2 & 2 && 1298 & 1302 && 244 & 215\\  
+			
+			0.6 & 1373 & 1410 && 2 & 1 && 1240 & 1249 && 386 & 339\\
+			
+			0.65 & 1278 & 1314 && 0 & 0 && 1175 & 1182 && 547 & 504\\
+			
+			0.7  & 1128 & 1191 && 0 & 0 && 1115 & 1139 && 757 & 670\\
+			
+			0.75  & 982 & 1072 && 0 & 0 && 1064 & 1081 && 954 & 847\\ 
+			
+			0.8  & 825 &  918 && 0 & 0 && 998 & 1025 && 1177 & 1057\\ 
+			
+			0.85  & 648 & 739 && 0 & 0 && 931 & 952 && 1421 & 1309\\
+			
+			0.9 0 & 435 & 504 && 0 & 0 && 821 & 842 && 1744 & 1654\\
+			
+			0.95  & 236 & 270 && 0 & 0 && 601 & 636 && 2163 & 2094\\ 
+			\bottomrule
+		\end{tabular}
+	
+\end{table*}
+\section{Bilder}
+
+Bilder werden genauso in Gleitumgebungen platziert wie für Tabellen in \autoref{sec:Tabellen} gezeigt.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[viewport=0 0 350 350,clip,width=0.8\linewidth]{images/svm.png}
+	\caption{Bildunterschrift}
+%\includegraphics[scale=0.2]{images/svm.png}
+\end{figure}
+
+\section{TikZ}
+TikZ ermöglicht es mit Hilfe von Latex Grafiken zu erzeugen, beispielsweise um Diagramme zu erzwuegen, wie in \autoref{fig:tikz} gezeigt.
+\begin{figure}[h]
+	\begin{tikzpicture}
+		\begin{axis}[ybar=0pt,
+			bar width=7pt,
+			symbolic x coords={0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95},
+			xtick=data,
+			legend pos=north west,  enlargelimits=0.1 , 
+			tickwidth=0pt,
+			xlabel={Majority threshold requirements},
+			ylabel={Total number of cases with no majority}    ]
+			\addplot[ybar,fill=blue, ] coordinates {
+				(0.5,   119)
+				(0.55,  244)
+				(0.6,   386)
+				(0.65,   547)
+				(0.7,  757)
+				(0.75,   954)
+				(0.8,   1177)
+				(0.85,  1421)
+				(0.9,   1744)
+				(0.95, 2163)
+			};
+			\addplot[ybar,fill=red] coordinates {
+				(0.5,   77)
+				(0.55,  215)
+				(0.6,   339)
+				(0.65,   504)
+				(0.7,  670)
+				(0.75,   847)
+				(0.8,   1057)
+				(0.85,  1309)
+				(0.9,   1654)
+				(0.95, 2094)
+			};
+			\legend{Unweighted, Weighted} 
+		\end{axis}
+	\end{tikzpicture}
+	\caption{Comparison of ``no Majority'' cases for an unweighted and weighted majority vote with different majority thresholds.}\label{fig:tikz}
+\end{figure}
+\printbibliography
+%\printbibliography[title = {Mein Literaturverzeichnis}]
+
+\end{document}
