@@ -1,3 +1,4 @@
 # Calculation Methods go here
-def testCalc:
+
+def testCalc():
   pass
