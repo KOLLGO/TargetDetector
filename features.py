@@ -13,7 +13,7 @@ def extract_pronouns(df):
     """
     in: df
     current out: df with pronouns features
-    desired out: feature vector with counts of pronouns
+    desired out: ???
     """
     pronouns_list = ["ich", "du", "er", "sie", "wir", "ihr", "es"]  # List of pronouns
 
@@ -42,7 +42,8 @@ def extract_pronouns(df):
 def extract_generics(df):
     """
     in: df
-    out: feature vector with counts of generics
+    current out: df with pronouns features
+    desired out: ???
     """
     generics_list = [
         "jeder",
@@ -61,13 +62,32 @@ def extract_generics(df):
         "jemand",
         "politik",
     ]  # list of generics
-    pass
+    df_generics = pd.DataFrame()
+    df_generics["id"] = 0  # id column
+    # all generics columns
+    for generic in generics_list:
+        df_generics[f"generic_{generic}"] = 0
+
+    # loop through rows
+    for idx, row in df.iterrows():
+        id = row["id"]  # get id
+        text = row["description"]  # get description
+
+        # loop through generics
+        for generic in generics_list:
+            column_name = f"generic_{generic}"  # set column name
+            count = text.lower().split().count(generic)  # count occurrences
+            df_generics.loc[idx, "id"] = id  # place id in generic df
+            df_generics.loc[idx, column_name] = count  # enter counts
+
+    return df_generics
 
 
 def extract_mentions(df):
     """
     in: df
-    out: feature vector with counts of mentions
+    current out: df with pronouns features
+    desired out: ???
     """
     pass
 
@@ -81,3 +101,4 @@ def extract_word_n_grams(df):
 
 
 print(extract_pronouns(df))
+print(extract_generics(df))
