@@ -17,25 +17,30 @@ def extract_pronouns(df):
     """
     pronouns_list = ["ich", "du", "er", "sie", "wir", "ihr", "es"]  # List of pronouns
 
-    # create columns for pronouns
+    # create df + columns for pronouns
+    df_pronouns = pd.DataFrame()
+    df_pronouns["id"] = 0  # id column
+    # all pronoun columns
     for pronoun in pronouns_list:
-        df[f"pronoun_{pronoun}"] = 0
+        df_pronouns[f"pronoun_{pronoun}"] = 0
 
     # loop through rows
     for idx, row in df.iterrows():
+        id = row["id"]  # get id
         text = row["description"]  # get description
 
         # loop through pronouns
         for pronoun in pronouns_list:
             column_name = f"pronoun_{pronoun}"  # set column name
             count = text.lower().split().count(pronoun)  # count occurrences
-            df.loc[idx, column_name] = count  # enter counts
+            df_pronouns.loc[idx, "id"] = id  # place id in pronoun df
+            df_pronouns.loc[idx, column_name] = count  # enter counts
 
-    return df
+    return df_pronouns
 
 
 def extract_generics(df):
-    """ "
+    """
     in: df
     out: feature vector with counts of generics
     """
