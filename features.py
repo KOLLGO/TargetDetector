@@ -2,20 +2,28 @@
 import pandas as pd
 import re
 
-# --------Pseudo DataFrame---------
+# --------DataFrame---------
 df = pd.read_csv(
-    "tar.csv", sep=";", nrows=50, on_bad_lines="skip", na_filter=True
-)  # first 50 rows
+    "../tar.csv", sep=";", nrows=50, on_bad_lines="skip", na_filter=True
+)  # first 50 rows for testing
 df["description"] = df["description"].str.lower()  # lowercase descriptions
 print(df.head())
+
+
+def extract_labels(df):
+    """
+    in: df
+    out: df with labels
+    """
+    df_labels = df[["id", "TAR"]].copy()  # extract id and target columns
+    return df_labels
 
 
 # --------Feature Extraction---------
 def extract_pronouns(df):
     """
     in: df
-    current out: df with pronouns features
-    desired out: ???
+    out: df with pronouns features
     """
     pronouns_list = ["ich", "du", "er", "sie", "wir", "ihr", "es"]  # List of pronouns
 
@@ -44,8 +52,7 @@ def extract_pronouns(df):
 def extract_generics(df):
     """
     in: df
-    current out: df with pronouns features
-    desired out: ???
+    out: df with generics features
     """
     generics_list = [
         "jeder",
@@ -88,8 +95,7 @@ def extract_generics(df):
 def extract_mentions(df):
     """
     in: df
-    current out: df with pronouns features
-    desired out: ???
+    out: df with mentions features
     todo: maybe other mentions depending on final dataset
     """
     mentions_list = ["ind", "pre", "pol", "grp"]  # list of mentions
@@ -103,7 +109,6 @@ def extract_mentions(df):
     for idx, row in df.iterrows():
         id = row["id"]  # get id
         text = row["description"]  # get description
-        print(text)
 
         # loop through mentions
         for mention in mentions_list:
@@ -118,11 +123,31 @@ def extract_mentions(df):
 def extract_word_n_grams(df):
     """
     in: df
-    out: word n-grams
+    out: df with word n-grams
     """
     pass
 
 
-print(extract_pronouns(df))
-print(extract_generics(df))
-print(extract_mentions(df))
+# --------Feature Extraction Pipeline---------
+def feature_extraction_pipeline(df):
+    """
+    in: df
+    out: df with all features
+    """
+    # get all feature dfs
+    df_labels = extract_labels(df)
+    df_pronouns = extract_pronouns(df)
+    df_generics = extract_generics(df)
+    df_mentions = extract_mentions(df)
+
+    # df_word_ngrams = extract_word_n_grams(df)  # not implemented yet
+
+    # Merge all feature dataframes on using 'id'
+    df_features = df_pronouns.merge(df_generics, on="id").merge(
+        df_mentions, on="id"
+    )  # ToDo: add word n-grams when implemented
+    df_features = df_features.merge(df_labels, on="id")  # add labels to last column
+    return df_features
+
+
+print(feature_extraction_pipeline(df))
