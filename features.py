@@ -1,14 +1,8 @@
 # Feature Extraction
 import pandas as pd
 import re
-
-# --------DataFrame---------
-df = pd.read_csv(
-    "../tar.csv", sep=";", nrows=50, on_bad_lines="skip", na_filter=True
-)  # first 50 rows for testing
-df["description"] = df["description"].str.lower()  # lowercase descriptions
-print(df.head())
-
+from scipy.sparse import hstack
+from preprocessing import test_data_handling(), train_data_handling(), train_tfidf_matrix, test_tfidf_matrix
 
 def extract_labels(df):
     """
@@ -25,7 +19,59 @@ def extract_pronouns(df):
     in: df
     out: df with pronouns features
     """
-    pronouns_list = ["ich", "du", "er", "sie", "wir", "ihr", "es"]  # List of pronouns
+    pronouns_list = [
+        "ich",
+        "du",
+        "er",
+        "sie",
+        "es",
+        "wir",
+        "ihr",
+        "mich",
+        "dich",
+        "ihn",
+        "uns",
+        "euch",
+        "mir",
+        "dir",
+        "ihm",
+        "ihnen",
+        "mein",
+        "meine",
+        "meiner",
+        "meines",
+        "meinem",
+        "meinen",
+        "dein",
+        "deine",
+        "deiner",
+        "deines",
+        "deinem",
+        "deinen",
+        "sein",
+        "seine",
+        "seiner",
+        "seines",
+        "seinem",
+        "seinen",
+        "ihr",
+        "ihre",
+        "ihrer",
+        "ihres",
+        "ihrem",
+        "ihren",
+        "unser",
+        "unsere",
+        "unserer",
+        "unseres",
+        "unserem",
+        "unseren",
+        "euer",
+        "eure",
+        "eurer",
+        "eures",
+        "eurem",
+        "euren"]  # List of all pronouns
 
     # create df + columns for pronouns
     df_pronouns = pd.DataFrame()
@@ -61,15 +107,21 @@ def extract_generics(df):
         "man",
         "lieber",
         "liebe",
-        "euch",
-        "uns",
-        "dir",
-        "ihnen",
-        "mir",
         "freunde",
         "gruppe",
         "jemand",
         "politik",
+        "menschen",
+        "gesellschaft",
+        "gemeinschaft",
+        "volk",
+        "bürger",
+        "welt",
+        "nation",
+        "bevölkerung",
+        "der",
+        "die",
+        "das"
     ]  # list of generics
     df_generics = pd.DataFrame()
     df_generics["id"] = 0  # id column
@@ -129,7 +181,7 @@ def extract_word_n_grams(df):
 
 
 # --------Feature Extraction Pipeline---------
-def feature_extraction_pipeline(df):
+def feature_extraction_pipeline(df, tfidf_matrix):
     """
     in: df
     out: df with all features
@@ -139,15 +191,34 @@ def feature_extraction_pipeline(df):
     df_pronouns = extract_pronouns(df)
     df_generics = extract_generics(df)
     df_mentions = extract_mentions(df)
-
-    # df_word_ngrams = extract_word_n_grams(df)  # not implemented yet
+    df_word_ngrams = extract_word_n_grams(df)  # not implemented yet
 
     # Merge all feature dataframes on using 'id'
     df_features = df_pronouns.merge(df_generics, on="id").merge(
         df_mentions, on="id"
-    )  # ToDo: add word n-grams when implemented
+    ).merge(df_word_ngrams, on="id") # join all feature dfs
     df_features = df_features.merge(df_labels, on="id")  # add labels to last column
     return df_features
 
+def get_train_data():
+    """
+    in: none
+    out: dfs: X_train, y_train
+    """
+    df_features = feature_extraction_pipeline(train_data_handling())
+    train_tfidf_matrix = pd.DataFrame  # function from preprocessing goes here
+    X_train = hstack(df_features, train_tfidf_matrix.values)
+    y_train = df_features["TAR"]
+    return X_train, y_train
 
-print(feature_extraction_pipeline(df))
+
+def get_test_data():
+    """
+    in: none
+    out: dfs: X_test, y_test
+    """
+    df_features = feature_extraction_pipeline(test_data_handling())
+    test_tfidf_matrix = pd.DataFrame  # function from preprocessing goes here
+    X_test = hstack(df_features, test_tfidf_matrix.values)
+    y_test = df_features["TAR"]
+    return X_test, y_test
