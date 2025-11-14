@@ -268,6 +268,22 @@ def tfidf_vectorizer(X_train_resampled, X_test):
     return X_train_tfidf, X_test_tfidf
 
 
+# ======= Data for feature extraction ======== #
+def get_processed_dfs():
+    """
+    in: none
+    out: df with preprocessed data
+    """
+    df_preprocessed = data_handling("tar.csv")
+    X_train, X_test, y_train, y_test = split_data(df_preprocessed)
+    X_train_resampled, y_train_resampled = random_oversampling(X_train, y_train)
+    x_train_tfidf, x_test_tfidf = tfidf_vectorizer(X_train_resampled, X_test)
+    x_train_tfidf = x_train_tfidf.hstack(y_train_resampled)
+    x_test_tfidf = x_test_tfidf.hstack(y_test)
+
+    return df_preprocessed, x_train_tfidf, x_test_tfidf
+
+
 # ======= Test ======== #
 if __name__ == "__main__":
     df_preprocessed = data_handling("tar.csv")
