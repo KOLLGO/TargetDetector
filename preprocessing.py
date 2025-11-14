@@ -281,7 +281,7 @@ def get_processed_dfs():
     x_train_tfidf = x_train_tfidf.hstack(y_train_resampled)
     x_test_tfidf = x_test_tfidf.hstack(y_test)
 
-    return df_preprocessed, x_train_tfidf, x_test_tfidf
+    return df_preprocessed, X_train_resampled, X_test, x_train_tfidf, x_test_tfidf
 
 
 # ======= Test ======== #
