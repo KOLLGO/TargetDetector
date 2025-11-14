@@ -1,22 +1,9 @@
 # Feature Extraction
 import pandas as pd
 import re
-
-# --------DataFrame---------
-df = pd.read_csv(
-    "../tar.csv", sep=";", nrows=50, on_bad_lines="skip", na_filter=True
-)  # first 50 rows for testing
-df["description"] = df["description"].str.lower()  # lowercase descriptions
-print(df.head())
-
-
-def extract_labels(df):
-    """
-    in: df
-    out: df with labels
-    """
-    df_labels = df[["id", "TAR"]].copy()  # extract id and target columns
-    return df_labels
+from collections import Counter
+from scipy.sparse import csr_matrix, hstack
+from preprocessing import get_processed_dfs
 
 
 # --------Feature Extraction---------
@@ -25,7 +12,60 @@ def extract_pronouns(df):
     in: df
     out: df with pronouns features
     """
-    pronouns_list = ["ich", "du", "er", "sie", "wir", "ihr", "es"]  # List of pronouns
+    pronouns_list = [
+        "ich",
+        "du",
+        "er",
+        "sie",
+        "es",
+        "wir",
+        "ihr",
+        "mich",
+        "dich",
+        "ihn",
+        "uns",
+        "euch",
+        "mir",
+        "dir",
+        "ihm",
+        "ihnen",
+        "mein",
+        "meine",
+        "meiner",
+        "meines",
+        "meinem",
+        "meinen",
+        "dein",
+        "deine",
+        "deiner",
+        "deines",
+        "deinem",
+        "deinen",
+        "sein",
+        "seine",
+        "seiner",
+        "seines",
+        "seinem",
+        "seinen",
+        "ihr",
+        "ihre",
+        "ihrer",
+        "ihres",
+        "ihrem",
+        "ihren",
+        "unser",
+        "unsere",
+        "unserer",
+        "unseres",
+        "unserem",
+        "unseren",
+        "euer",
+        "eure",
+        "eurer",
+        "eures",
+        "eurem",
+        "euren",
+    ]  # List of all pronouns
 
     # create df + columns for pronouns
     df_pronouns = pd.DataFrame()
@@ -61,15 +101,21 @@ def extract_generics(df):
         "man",
         "lieber",
         "liebe",
-        "euch",
-        "uns",
-        "dir",
-        "ihnen",
-        "mir",
         "freunde",
         "gruppe",
         "jemand",
         "politik",
+        "menschen",
+        "gesellschaft",
+        "gemeinschaft",
+        "volk",
+        "bürger",
+        "welt",
+        "nation",
+        "bevölkerung",
+        "der",
+        "die",
+        "das",
     ]  # list of generics
     df_generics = pd.DataFrame()
     df_generics["id"] = 0  # id column
@@ -125,7 +171,43 @@ def extract_word_n_grams(df):
     in: df
     out: df with word n-grams
     """
-    pass
+
+    # helper to produce n-grams from token list
+    def ngrams(tokens, n):
+        return [
+            " ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)
+        ]  # ngram loop
+
+    all_ngrams = set()
+    rows_ngrams = []  # store per-row lists of ngrams
+
+    for idx, row in df.iterrows():
+        text = row.get("description_clean", row.get("description", ""))  # get text
+        tokens = text.split()  # slice by space
+        row_ngrams = ngrams(tokens, 2) + ngrams(tokens, 3)  # create ngrams
+        rows_ngrams.append(row_ngrams)  # add to list
+        all_ngrams.update(row_ngrams)  # update set
+
+    # sort ngrams ascending
+    all_ngrams = sorted(all_ngrams)
+
+    # build df with ngram columns
+    col_names = [
+        f"ngram_{ng.replace(' ', '_')}" for ng in all_ngrams
+    ]  # replace space for names
+    df_ngrams = pd.DataFrame(
+        0, index=df.index, columns=["id"] + col_names
+    )  # add id for joining later
+
+    # fill id column and counts per row (Foreign Code, by GitHub Copilot)
+    for idx, row in df.iterrows():
+        df_ngrams.at[idx, "id"] = row.get("id", idx)
+        counter = Counter(rows_ngrams[idx])
+        for ng, col in zip(all_ngrams, col_names):
+            if counter.get(ng, 0):
+                df_ngrams.at[idx, col] = counter[ng]
+
+    return df_ngrams
 
 
 # --------Feature Extraction Pipeline---------
@@ -135,19 +217,41 @@ def feature_extraction_pipeline(df):
     out: df with all features
     """
     # get all feature dfs
-    df_labels = extract_labels(df)
     df_pronouns = extract_pronouns(df)
     df_generics = extract_generics(df)
     df_mentions = extract_mentions(df)
+    df_word_ngrams = extract_word_n_grams(df)  # not implemented yet
 
-    # df_word_ngrams = extract_word_n_grams(df)  # not implemented yet
-
-    # Merge all feature dataframes on using 'id'
-    df_features = df_pronouns.merge(df_generics, on="id").merge(
-        df_mentions, on="id"
-    )  # ToDo: add word n-grams when implemented
-    df_features = df_features.merge(df_labels, on="id")  # add labels to last column
+    # merge all feature dataframes using 'id'
+    df_features = (
+        df_pronouns.merge(df_generics, on="id")
+        .merge(df_mentions, on="id")
+        .merge(df_word_ngrams, on="id")
+    )  # join all feature dfs
     return df_features
 
 
-print(feature_extraction_pipeline(df))
+def get_feature_matrices():
+    """
+    in: none
+    out: dfs: X_train, y_train, X_test, y_test
+    """
+    df, X_train, X_test, X_train_tfidf, X_test_tfidf, y_train, y_test = (
+        get_processed_dfs()
+    )  # function from preprocessing.py
+
+    # Convert feature Series to DFs (Foreign Code, by GitHub Copilot)
+    df_train = pd.DataFrame({"id": range(len(X_train)), "description": X_train.values})
+    df_test = pd.DataFrame({"id": range(len(X_test)), "description": X_test.values})
+
+    # feature extraction pipeline for train and test data
+    df_features_train = feature_extraction_pipeline(df_train)
+    df_features_test = feature_extraction_pipeline(df_test)
+
+    # convert and combine features and tfidf to sparse matrix
+    mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
+    mat_features_test = csr_matrix(df_features_test.drop(columns=["id"]).values)
+    X_train = hstack([mat_features_train, X_train_tfidf])
+    X_test = hstack([mat_features_test, X_test_tfidf])
+
+    return X_train, y_train, X_test, y_test
