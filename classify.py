@@ -9,14 +9,8 @@ import joblib
 
 # ------------------ Daten vorbereiten ------------------
 
-# Features und Zielspalte korrekt auswählen
 X = df[["feature1", "feature2"]]  # Passe die Feature-Namen an
 y = df["target"]                  # Passe die Zielvariable an
-
-# Trainings- und Testdaten aufteilen
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
 
 # ------------------ Pipeline erstellen ------------------
 
@@ -29,7 +23,7 @@ pipeline = Pipeline([
 
 param_grid = {
     'svc__C': [0.1, 1, 10],
-    'svc__gamma': [0.001, 0.01, 0.1, 'scale']  # 'scale' ist ein automatischer Standardwert
+    'svc__gamma': [0.001, 0.01, 0.1, 'scale']  # 'scale' ist ein automatischer Standardwert von 0,22
 }
 
 grid_search = GridSearchCV(
