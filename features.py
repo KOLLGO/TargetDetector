@@ -231,27 +231,35 @@ def feature_extraction_pipeline(df):
     return df_features
 
 
-def get_feature_matrices():
+def get_test_matrix():
+    """
+    in: none
+    out: dfs: X_test, y_test
+    """
+    _, _, X_test, _, X_test_tfidf, _, y_test = get_processed_dfs()
+    # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
+    df_test = pd.DataFrame({"id": range(len(X_test)), "description": X_test.values})
+    # call feature extraction pipeline for test data
+    df_features_test = feature_extraction_pipeline(df_test)
+    # convert and combine features and tfidf to sparse matrix
+    mat_features_test = csr_matrix(df_features_test.drop(columns=["id"]).values)
+    X_test = hstack([mat_features_test, X_test_tfidf])
+    return X_test, y_test
+
+
+def get_train_matrix():
     """
     in: none
     out: dfs: X_train, y_train, X_test, y_test
     """
-    df, X_train, X_test, X_train_tfidf, X_test_tfidf, y_train, y_test = (
+    _, X_train, _, X_train_tfidf, _, y_train, _ = (
         get_processed_dfs()
     )  # function from preprocessing.py
-
-    # Convert feature Series to DFs (Foreign Code, by GitHub Copilot)
+    # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
     df_train = pd.DataFrame({"id": range(len(X_train)), "description": X_train.values})
-    df_test = pd.DataFrame({"id": range(len(X_test)), "description": X_test.values})
-
-    # feature extraction pipeline for train and test data
+    # feature extraction pipeline for train data
     df_features_train = feature_extraction_pipeline(df_train)
-    df_features_test = feature_extraction_pipeline(df_test)
-
     # convert and combine features and tfidf to sparse matrix
     mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
-    mat_features_test = csr_matrix(df_features_test.drop(columns=["id"]).values)
     X_train = hstack([mat_features_train, X_train_tfidf])
-    X_test = hstack([mat_features_test, X_test_tfidf])
-
-    return X_train, y_train, X_test, y_test
+    return X_train, y_train

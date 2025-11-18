@@ -1,5 +1,5 @@
 {
     "black-formatter.args": [
-        "--line-length", "200",
+        "--line-length", "300",
     ]
 }
