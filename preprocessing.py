@@ -28,7 +28,7 @@ def data_handling(file):
 
     # data input: csv -> df
     df_data = pd.read_csv(file, sep=";")
-    df_data = df_data.head(50)  # limit to first 50 rows for testing
+    df_data = df_data.head(10)  # limit to first 50 rows for testing
 
     # convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()
@@ -260,21 +260,21 @@ def tfidf_vectorizer(X_train_resampled, X_test):
     print("Test shape:", X_test_tfidf.shape)
 
     # save tf-idf features to csv (optional)
-    X_train_tfidf_df = pd.DataFrame(
+    """X_train_tfidf_df = pd.DataFrame(
         X_train_tfidf.toarray(), columns=vectorizer.get_feature_names_out()
     )
-    X_train_tfidf_df.to_csv("tfidf_train_oversampled.csv", index=False)
+    X_train_tfidf_df.to_csv("tfidf_train_oversampled.csv", index=False)"""
 
     return X_train_tfidf, X_test_tfidf
 
 
 # ======= Data for feature extraction ======== #
-def get_processed_dfs():
+def get_processed_dfs(csv_path):
     """
     in: none
     out: df with preprocessed data
     """
-    df_preprocessed = data_handling("..\\tar.csv")
+    df_preprocessed = data_handling(csv_path)
     X_train, X_test, y_train, y_test = split_data(df_preprocessed)
     X_train_resampled, y_train_resampled = random_oversampling(X_train, y_train)
     x_train_tfidf, x_test_tfidf = tfidf_vectorizer(X_train_resampled, X_test)

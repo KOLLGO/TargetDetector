@@ -1,7 +1,6 @@
-# ------------------ Imports ------------------
-
+import sys
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from features import get_train_matrix
@@ -9,13 +8,15 @@ import joblib
 
 # ------------------ Prepare Data ------------------
 
-X_train, y_train = get_train_matrix()  # Get the training feature matrix and labels
+X_train, y_train = get_train_matrix(
+    sys.argv[1]
+)  # Get the training feature matrix and labels
 
 # ------------------ Create Pipeline ------------------
 
 pipeline = Pipeline(
     [
-        ("scaler", StandardScaler()),  # Standardizes the values
+        ("scaler", StandardScaler(with_mean=False)),  # Standardizes the values
         (
             "svc",
             SVC(kernel="rbf"),
@@ -53,7 +54,9 @@ grid_search.fit(X_train, y_train)  # Training the model
 best_model = (
     grid_search.best_estimator_
 )  # Stores the model with the best parameters found by GridSearch
-filename = "model.joblib"  # Filename for saving
+filename = (
+    sys.argv[2] + "model.joblib"
+)  # Filename for saving, given as second run argument
 joblib.dump(best_model, filename)  # Serialize and save the model
 
 # ------------------ Entry Point ------------------

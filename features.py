@@ -1,4 +1,4 @@
-# Feature Extraction
+import sys
 import pandas as pd
 import re
 from collections import Counter
@@ -231,12 +231,12 @@ def feature_extraction_pipeline(df):
     return df_features
 
 
-def get_test_matrix():
+def get_test_matrix(csv_path):
     """
     in: none
     out: dfs: X_test, y_test
     """
-    _, _, X_test, _, X_test_tfidf, _, y_test = get_processed_dfs()
+    _, _, X_test, _, X_test_tfidf, _, y_test = get_processed_dfs(csv_path)
     # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
     df_test = pd.DataFrame({"id": range(len(X_test)), "description": X_test.values})
     # call feature extraction pipeline for test data
@@ -247,13 +247,13 @@ def get_test_matrix():
     return X_test, y_test
 
 
-def get_train_matrix():
+def get_train_matrix(csv_path):
     """
     in: none
     out: dfs: X_train, y_train, X_test, y_test
     """
-    _, X_train, _, X_train_tfidf, _, y_train, _ = (
-        get_processed_dfs()
+    _, X_train, _, X_train_tfidf, _, y_train, _ = get_processed_dfs(
+        csv_path
     )  # function from preprocessing.py
     # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
     df_train = pd.DataFrame({"id": range(len(X_train)), "description": X_train.values})
