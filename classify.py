@@ -1,6 +1,6 @@
 # ------------------ Imports ------------------
 
-from calc import *  # Stelle sicher, dass df hier definiert ist
+from calc import *
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
@@ -8,45 +8,45 @@ from sklearn.pipeline import Pipeline
 from features import get_feature_matrices
 import joblib
 
-# ------------------ Daten vorbereiten ------------------
+# ------------------ Prepare Data ------------------
 
-X_train, y_train, X_test, y_test = get_feature_matrices() # Uebergabe Feature-Matrix
+X_train, y_train, X_test, y_test = get_feature_matrices()  # Get the feature matrices (X_train, y_train, X_test, y_test)
 
-# ------------------ Pipeline erstellen ------------------
+# ------------------ Create Pipeline ------------------
 
 pipeline = Pipeline([
-    ("scaler", StandardScaler()),   # standartisiert Werte
-    ("svc", SVC(kernel="rbf"))    # SVC = Support Vector Classifyer, radial basis function Kernel
+    ("scaler", StandardScaler()),   # Standardizes the values
+    ("svc", SVC(kernel="rbf"))    # SVC = Support Vector Classifier, using the radial basis function (RBF) Kernel
 ])
 
-# ------------------ Parameteroptimierung ------------------
+# ------------------ Parameter Optimization ------------------
 
 param_grid = {
-    'svc__C': [0.1, 1, 10],     # gewaehlte Werte fuer Parameter C (Bestrafung Fehlklassifikation)
+    'svc__C': [0.1, 1, 10],     # Selected values for parameter C (Penalty for misclassification)
     'svc__gamma': [0.001, 0.01, 0.1, 'scale']
-    # gewaehlte Werte fuer Parameter Gamma (Einfluss einzelnes Trainingsbeispiel)
-    # 'scale' ist ein automatischer Standardwert von 0,22
+    # Selected values for parameter Gamma (Influence of a single training example)
+    # 'scale' is an automatic default value
 }
 
 grid_search = GridSearchCV(
-    estimator=pipeline,  # zu bewertende Modell -> Pipeline (Standardsclaer + SVC)
-    param_grid=param_grid,  # geteste Parameterkombination
-    cv=5,  # Anzahl Folds Cross-Validation, 5 als optimaler Wert
-    scoring='accuracy',  # Bewertungsmetrik
-    verbose=1  # Anzeige Fortschritt & Statuts während Suche, 1 = einfache Ausgabe
+    estimator=pipeline,  # The model to be evaluated -> Pipeline (StandardScaler + SVC)
+    param_grid=param_grid,  # The parameter combinations to be tested
+    cv=5,  # Number of Folds for Cross-Validation, 5 is often considered an optimal value
+    scoring='accuracy',  # Evaluation metric
+    verbose=1  # Display progress & status during the search, 1 = simple output
 )
 
 # ------------------ Training ------------------
 
-grid_search.fit(X_train, y_train)  # Training
+grid_search.fit(X_train, y_train)  # Training the model
 
-# ------------------ Modell speichern ------------------
+# ------------------ Save Model ------------------
 
-best_model = grid_search.best_estimator_    # speichert Model mit besten Paramtern aus GridSearch
-filename = "model.joblib"  # Dateiname für Speicherung
-joblib.dump(best_model, filename)  # Serialisierung Model 
+best_model = grid_search.best_estimator_    # Stores the model with the best parameters found by GridSearch
+filename = "model.joblib"  # Filename for saving
+joblib.dump(best_model, filename)  # Serialize and save the model
 
-# ------------------ Einstiegspunkt ------------------
+# ------------------ Entry Point ------------------
 
 if __name__ == "__main__":
     pass
