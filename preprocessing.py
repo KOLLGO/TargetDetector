@@ -28,7 +28,7 @@ def data_handling(file):
 
     # data input: csv -> df
     df_data = pd.read_csv(file, sep=";")
-    df_data = df_data.head(10)  # limit to first 50 rows for testing
+    df_data = df_data.head(100)  # limit to first 100 rows for testing
 
     # convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()
@@ -244,7 +244,7 @@ def tfidf_vectorizer(X_train_resampled, X_test):
 
     vectorizer = TfidfVectorizer(
         max_features=10000,  # limit feature space dimensionality
-        min_df=2,  # mininmal document frequency for a token to be included (avoids overfitting)
+        min_df=1,  # mininmal document frequency for a token to be included (avoids overfitting)
         sublinear_tf=True,  # logarithmic scaling for better for better weighting
         norm="l2",  # L2 normalization
         stop_words=None,  # doesnt exlude more stopwords
@@ -271,7 +271,7 @@ def tfidf_vectorizer(X_train_resampled, X_test):
 # ======= Data for feature extraction ======== #
 def get_processed_dfs(csv_path):
     """
-    in: none
+    in: csv file path
     out: df with preprocessed data
     """
     df_preprocessed = data_handling(csv_path)
@@ -287,6 +287,19 @@ def get_processed_dfs(csv_path):
         y_train_resampled,
         y_test,
     )
+
+
+# ======== Build df from file for running program normally ======== #
+def build_df_from_file(csv_path):
+    """
+    in: csv file path
+    out: df with preprocessed data
+    """
+    df_preprocessed = data_handling(csv_path)
+    df_tfidf, _ = tfidf_vectorizer(
+        df_preprocessed["description_clean"], df_preprocessed["description_clean"]
+    )
+    return df_preprocessed, df_tfidf
 
 
 # ======= Test ======== #

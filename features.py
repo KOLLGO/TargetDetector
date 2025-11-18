@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from collections import Counter
 from scipy.sparse import csr_matrix, hstack
-from preprocessing import get_processed_dfs
+from preprocessing import get_processed_dfs, build_df_from_file
 
 
 # --------Feature Extraction---------
@@ -231,9 +231,10 @@ def feature_extraction_pipeline(df):
     return df_features
 
 
+# --------Get Feature Matrices---------
 def get_test_matrix(csv_path):
     """
-    in: none
+    in: csv file path
     out: dfs: X_test, y_test
     """
     _, _, X_test, _, X_test_tfidf, _, y_test = get_processed_dfs(csv_path)
@@ -249,7 +250,7 @@ def get_test_matrix(csv_path):
 
 def get_train_matrix(csv_path):
     """
-    in: none
+    in: csv file path
     out: dfs: X_train, y_train, X_test, y_test
     """
     _, X_train, _, X_train_tfidf, _, y_train, _ = get_processed_dfs(
@@ -263,3 +264,20 @@ def get_train_matrix(csv_path):
     mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
     X_train = hstack([mat_features_train, X_train_tfidf])
     return X_train, y_train
+
+
+# --------- Build Feature Matrix for regular usage --------
+def build_feature_matrix(csv_path):
+    """
+    in: csv file path
+    out: df with all features
+    """
+    df_preprocessed, df_tfidf = build_df_from_file(csv_path)
+    df_features = feature_extraction_pipeline(df_preprocessed)
+    print(df_preprocessed.shape)
+    print(df_tfidf)
+    mat_features_all = csr_matrix(df_features.drop(columns=["id"]).values)
+    print(mat_features_all.shape)
+    X_train = hstack([mat_features_all, df_tfidf])
+
+    return X_train
