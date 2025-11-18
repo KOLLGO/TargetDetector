@@ -5,12 +5,12 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from features import get_feature_matrices
 import joblib
 
 # ------------------ Daten vorbereiten ------------------
 
-X = df[["feature1", "feature2"]]  # Passe die Feature-Namen an
-y = df["target"]                  # Passe die Zielvariable an
+X_train, y_train, X_test, y_test = get_feature_matrices()
 
 # ------------------ Pipeline erstellen ------------------
 
@@ -40,13 +40,13 @@ grid_search.fit(X_train, y_train)
 
 # ------------------ Modell speichern ------------------
 
-filename = "grid_search.joblib"
-joblib.dump(grid_search, filename)
+best_model = grid_search.best_estimator_
+filename = "model.joblib"
+joblib.dump(best_model, filename)
 
 # ------------------ Modell laden (optional) ------------------
 
-# grid_search = joblib.load("grid_search.joblib")
-# best_model = grid_search.best_estimator_
+# grid_search = joblib.load("model.joblib")
 # predictions = best_model.predict(X_test)
 
 # ------------------ Einstiegspunkt ------------------
