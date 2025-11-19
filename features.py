@@ -4,7 +4,6 @@ import re
 from collections import Counter
 from scipy.sparse import csr_matrix, hstack
 from preprocessing import get_processed_dfs, data_handling
-from pathlib import Path
 
 
 # --------Feature Extraction---------
@@ -172,41 +171,60 @@ def extract_word_n_grams(df):
     in: df
     out: df with word n-grams
     """
+    # Parameters: keep top K n-grams separately for bigrams and trigrams
+    TOP_BIGRAMS = 500
+    TOP_TRIGRAMS = 100
 
     # helper to produce n-grams from token list
     def ngrams(tokens, n):
-        return [
-            " ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)
-        ]  # ngram loop
+        return [" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
-    all_ngrams = set()
-    rows_ngrams = []  # store per-row lists of ngrams
+    # init counters and storage
+    bigram_counter = Counter()
+    trigram_counter = Counter()
+    rows_bigrams = []
+    rows_trigrams = []
 
     for idx, row in df.iterrows():
-        text = row.get("description_clean", row.get("description", ""))  # get text
-        tokens = text.split()  # slice by space
-        row_ngrams = ngrams(tokens, 2) + ngrams(tokens, 3)  # create ngrams
-        rows_ngrams.append(row_ngrams)  # add to list
-        all_ngrams.update(row_ngrams)  # update set
+        text = row.get(
+            "description_clean", row.get("description", "")
+        )  # get cleaned text
+        tokens = str(text).strip().split()  # tokenize by words
 
-    # sort ngrams ascending
-    all_ngrams = sorted(all_ngrams)
+        # generate bigrams and trigrams per row
+        bigrams = ngrams(tokens, 2) if len(tokens) >= 2 else []
+        trigrams = ngrams(tokens, 3) if len(tokens) >= 3 else []
 
-    # build df with ngram columns
-    col_names = [
-        f"ngram_{ng.replace(' ', '_')}" for ng in all_ngrams
-    ]  # replace space for names
-    df_ngrams = pd.DataFrame(
-        0, index=df.index, columns=["id"] + col_names
-    )  # add id for joining later
+        # add to storage
+        rows_bigrams.append(bigrams)
+        rows_trigrams.append(trigrams)
 
-    # fill id column and counts per row (Foreign Code, by GitHub Copilot)
+        # update counters
+        bigram_counter.update(bigrams)
+        trigram_counter.update(trigrams)
+
+    # pick top-k most common n-grams
+    top_bigrams = [ng for ng, _ in bigram_counter.most_common(TOP_BIGRAMS)]
+    top_trigrams = [ng for ng, _ in trigram_counter.most_common(TOP_TRIGRAMS)]
+
+    # build column names
+    bigram_cols = [f"ngram_bi_{bg.replace(' ', '_')}" for bg in top_bigrams]
+    trigram_cols = [f"ngram_tri_{tg.replace(' ', '_')}" for tg in top_trigrams]
+    col_names = bigram_cols + trigram_cols
+
+    # prepare dataframe with zeros
+    df_ngrams = pd.DataFrame(0, index=df.index, columns=["id"] + col_names)
+
+    # fill id and counts per row (fixed by GitHub Copilot)
     for idx, row in df.iterrows():
         df_ngrams.at[idx, "id"] = row.get("id", idx)
-        counter = Counter(rows_ngrams[idx])
-        for ng, col in zip(all_ngrams, col_names):
-            if counter.get(ng, 0):
-                df_ngrams.at[idx, col] = counter[ng]
+        b_counter = Counter(rows_bigrams[idx])
+        t_counter = Counter(rows_trigrams[idx])
+
+        for bg, col in zip(top_bigrams, bigram_cols):
+            df_ngrams.at[idx, col] = b_counter.get(bg, 0)
+        for tg, col in zip(top_trigrams, trigram_cols):
+            df_ngrams.at[idx, col] = t_counter.get(tg, 0)
 
     return df_ngrams
 

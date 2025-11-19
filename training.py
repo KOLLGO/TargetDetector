@@ -60,8 +60,6 @@ filename = (
 
 joblib.dump(best_model, filename)  # Serialize and save the model
 
-print(X_test)
-print(y_test)
 # evaluation = evaluate(X_test, y_test)
 
 # ------------------ Entry Point ------------------
