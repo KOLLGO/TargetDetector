@@ -1,22 +1,22 @@
 import sys
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MaxAbsScaler
 from sklearn.pipeline import Pipeline
-from features import get_train_matrix
+from features import get_model_matrices
 import joblib
 
 # ------------------ Prepare Data ------------------
 
-X_train, y_train = get_train_matrix(
-    sys.argv[1]
+X_train, y_train, X_test, y_test = get_model_matrices(
+    sys.argv[1], sys.argv[2]
 )  # Get the training feature matrix and labels
 
 # ------------------ Create Pipeline ------------------
 
 pipeline = Pipeline(
     [
-        ("scaler", StandardScaler(with_mean=False)),  # Standardizes the values
+        ("scaler", MaxAbsScaler()),  # scales the values
         (
             "svc",
             SVC(kernel="rbf"),
@@ -57,7 +57,12 @@ best_model = (
 filename = (
     sys.argv[2] + "model.joblib"
 )  # Filename for saving, given as second run argument
+
 joblib.dump(best_model, filename)  # Serialize and save the model
+
+print(X_test)
+print(y_test)
+# evaluation = evaluate(X_test, y_test)
 
 # ------------------ Entry Point ------------------
 

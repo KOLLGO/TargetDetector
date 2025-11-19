@@ -1,5 +1,5 @@
 # ======== Preprocessing ======== #
-
+import joblib
 import pandas as pd
 import spacy
 import re
@@ -234,10 +234,11 @@ def random_oversampling(X_train, y_train):
 
 
 # ======= TF-IDF feature engineering ======== #
-def tfidf_vectorizer(X_train_resampled, X_test):
+def tfidf_vectorizer(X_train_resampled, X_test, filepath):
     """
     in: X_train_resampled -> oversampled training features
         X_test -> test features
+        filepath -> path to save the vectorizer
     out: X_train_tfidf -> TF-IDF transformed training features (sparse matrix)
          X_test_tfidf -> TF-IDF transformed test features (sparse matrix)
     """
@@ -259,6 +260,8 @@ def tfidf_vectorizer(X_train_resampled, X_test):
     print("Train shape:", X_train_tfidf.shape)
     print("Test shape:", X_test_tfidf.shape)
 
+    joblib.dump(vectorizer, filepath + "tfidf_vectorizer.pkl")  # save vectorizer
+
     # save tf-idf features to csv (optional)
     """X_train_tfidf_df = pd.DataFrame(
         X_train_tfidf.toarray(), columns=vectorizer.get_feature_names_out()
@@ -269,7 +272,7 @@ def tfidf_vectorizer(X_train_resampled, X_test):
 
 
 # ======= Data for feature extraction ======== #
-def get_processed_dfs(csv_path):
+def get_processed_dfs(csv_path, vec_path):
     """
     in: csv file path
     out: df with preprocessed data
@@ -277,7 +280,7 @@ def get_processed_dfs(csv_path):
     df_preprocessed = data_handling(csv_path)
     X_train, X_test, y_train, y_test = split_data(df_preprocessed)
     X_train_resampled, y_train_resampled = random_oversampling(X_train, y_train)
-    x_train_tfidf, x_test_tfidf = tfidf_vectorizer(X_train_resampled, X_test)
+    x_train_tfidf, x_test_tfidf = tfidf_vectorizer(X_train_resampled, X_test, vec_path)
     return (
         df_preprocessed,
         X_train_resampled,
@@ -287,19 +290,6 @@ def get_processed_dfs(csv_path):
         y_train_resampled,
         y_test,
     )
-
-
-# ======== Build df from file for running program normally ======== #
-def build_df_from_file(csv_path):
-    """
-    in: csv file path
-    out: df with preprocessed data
-    """
-    df_preprocessed = data_handling(csv_path)
-    df_tfidf, _ = tfidf_vectorizer(
-        df_preprocessed["description_clean"], df_preprocessed["description_clean"]
-    )
-    return df_preprocessed, df_tfidf
 
 
 # ======= Test ======== #
