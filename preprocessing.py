@@ -28,7 +28,7 @@ def data_handling(file):
 
     # data input: csv -> df
     df_data = pd.read_csv(file, sep=";")
-    df_data = df_data.head(100)  # limit to first 100 rows for testing
+    # df_data = df_data.head(5000)  # optional limit for faster testing
 
     # convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()

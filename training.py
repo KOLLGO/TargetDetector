@@ -8,8 +8,19 @@ import joblib
 
 # ------------------ Prepare Data ------------------
 
+csv_path = sys.argv[1]
+model_folder = sys.argv[2]
+
+if not model_folder.endswith("/"):
+    model_folder += "/"
+
+print("----------------- Model Training -----------------")
+print("data file: " + csv_path)
+print("model folder: " + model_folder)
+print()
+
 X_train, y_train, X_test, y_test = get_model_matrices(
-    sys.argv[1], sys.argv[2]
+    csv_path, model_folder
 )  # Get the training feature matrix and labels
 
 # ------------------ Create Pipeline ------------------
@@ -37,6 +48,7 @@ param_grid = {
     # 'scale' is an automatic default value
 }
 
+print("Searching hyperparameters...")
 grid_search = GridSearchCV(
     estimator=pipeline,  # The model to be evaluated -> Pipeline (StandardScaler + SVC)
     param_grid=param_grid,  # The parameter combinations to be tested
@@ -47,6 +59,7 @@ grid_search = GridSearchCV(
 
 # ------------------ Training ------------------
 
+print("Training model...")
 grid_search.fit(X_train, y_train)  # Training the model
 
 # ------------------ Save Model ------------------
@@ -55,12 +68,20 @@ best_model = (
     grid_search.best_estimator_
 )  # Stores the model with the best parameters found by GridSearch
 filename = (
-    sys.argv[2] + "model.joblib"
+    model_folder + "model.joblib"
 )  # Filename for saving, given as second run argument
 
 joblib.dump(best_model, filename)  # Serialize and save the model
 
+print("Evaluating model...")
+evaluation = None
 # evaluation = evaluate(X_test, y_test)
+
+# ---------------- serialize Evaluation Results ----------------
+with open(model_folder + "evaluation.txt", "w") as f:
+    f.write(str(evaluation))
+
+print("All data saved to your model folder!")
 
 # ------------------ Entry Point ------------------
 

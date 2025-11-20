@@ -12,6 +12,7 @@ def extract_pronouns(df):
     in: df
     out: df with pronouns features
     """
+    print("Extracting pronouns...")
     pronouns_list = [
         "ich",
         "du",
@@ -94,6 +95,7 @@ def extract_generics(df):
     in: df
     out: df with generics features
     """
+    print("Extracting generics...")
     generics_list = [
         "jeder",
         "alle",
@@ -144,6 +146,7 @@ def extract_mentions(df):
     out: df with mentions features
     todo: maybe other mentions depending on final dataset
     """
+    print("Extracting mentions...")
     mentions_list = ["ind", "pre", "pol", "grp"]  # list of mentions
     df_mentions = pd.DataFrame()
     df_mentions["id"] = 0  # id column
@@ -171,6 +174,7 @@ def extract_word_n_grams(df):
     in: df
     out: df with word n-grams
     """
+    print("Extracting word n-grams...")
     # Parameters: keep top K n-grams separately for bigrams and trigrams
     TOP_BIGRAMS = 500
     TOP_TRIGRAMS = 100
@@ -256,9 +260,11 @@ def get_model_matrices(csv_path, vec_path):
     in: csv file path
     out: dfs: X_train, y_train, X_test, y_test
     """
+    print("Preprocessing data...")
     _, X_train, X_test, X_train_tfidf, _, y_train, y_test = get_processed_dfs(
         csv_path, vec_path
     )  # function from preprocessing.py
+    print("Starting feature extraction...")
     X_train = get_train_matrix(X_train, X_train_tfidf, vec_path)
     X_test = get_test_matrix(X_test, vec_path)
     return X_train, y_train, X_test, y_test
