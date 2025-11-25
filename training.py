@@ -1,10 +1,17 @@
 import sys
+
 from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.pipeline import Pipeline
 from features import get_model_matrices
 import joblib
+from sklearn.metrics import accuracy_score
+from sklearn.calibration import CalibratedClassifierCV
 
 # ------------------ Prepare Data ------------------
 
@@ -23,21 +30,66 @@ X_train, y_train, X_test, y_test = get_model_matrices(
     csv_path, model_folder
 )  # Get the training feature matrix and labels
 
-# ------------------ Create Pipeline ------------------
+# ------------------ Create Pipelines ------------------
 
-pipeline = Pipeline(
+svc_pipeline = Pipeline(
     [
         ("scaler", MaxAbsScaler()),  # scales the values
         (
             "svc",
-            SVC(kernel="rbf"),
+            SVC(kernel="rbf", probability=True),
         ),  # SVC = Support Vector Classifier, using the radial basis function (RBF) Kernel
     ]
+)
+"""
+linear_svc_pipeline = Pipeline(
+    [
+        ("scaler", MaxAbsScaler()),
+        (
+            "classifier",
+            CalibratedClassifierCV(
+                LinearSVC(max_iter=10000, dual="auto", multi_class="ovr"), cv=3
+            ),
+        ),
+    ]
+)"""
+
+naive_bayes_pipeline = Pipeline(
+    [
+        ("scaler", MaxAbsScaler()),
+        ("classifier", MultinomialNB()),
+    ]
+)
+
+logistic_pipeline = Pipeline(
+    [
+        ("scaler", MaxAbsScaler()),
+        ("classifier", LogisticRegression(max_iter=10000, multi_class="multinomial")),
+    ]
+)
+
+# ------------------ Meta Classifier -------------------
+meta_classifier = VotingClassifier(
+    estimators=[
+        ("svc", svc_pipeline),
+        ("naive_bayes", naive_bayes_pipeline),
+        ("logistic", logistic_pipeline),
+    ],
+    voting="soft",  # weighted probabilities
+    n_jobs=-1,  # all available CPU-cores
 )
 
 # ------------------ Parameter Optimization ------------------
 
 param_grid = {
+    "svc__svc__C": [0.1, 1, 10],
+    "svc__svc__gamma": [0.001, 0.01, 0.1, "scale"],
+    "naive_bayes__classifier__alpha": [1.0, 0.1, 0.01],
+    "logistic__classifier__C": [0.1, 1, 10],
+    "logistic__classifier__solver": ["lbfgs", "newton-cg"],
+    "voting": ["soft", "hard"],
+}
+"""param_grid = {
     "svc__C": [
         0.1,
         1,
@@ -46,15 +98,16 @@ param_grid = {
     "svc__gamma": [0.001, 0.01, 0.1, "scale"],
     # Selected values for parameter Gamma (Influence of a single training example)
     # 'scale' is an automatic default value
-}
+}"""
 
 print("Searching hyperparameters...")
 grid_search = GridSearchCV(
-    estimator=pipeline,  # The model to be evaluated -> Pipeline (StandardScaler + SVC)
+    estimator=meta_classifier,  # The model to be evaluated -> Pipeline (StandardScaler + SVC)
     param_grid=param_grid,  # The parameter combinations to be tested
     cv=5,  # Number of Folds for Cross-Validation, 5 is often considered an optimal value
     scoring="accuracy",  # Evaluation metric
-    verbose=1,  # Display progress & status during the search, 1 = simple output
+    verbose=2,  # Display progress & status during the search, 2 = detailed output
+    n_jobs=-1,  # Use all available CPU-cores
 )
 
 # ------------------ Training ------------------
@@ -76,7 +129,9 @@ joblib.dump(best_model, filename)  # Serialize and save the model
 print("Evaluating model...")
 evaluation = None
 # evaluation = evaluate(X_test, y_test)
-
+y_pred = best_model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("accuracy:" + str(accuracy))
 # ---------------- serialize Evaluation Results ----------------
 with open(model_folder + "evaluation.txt", "w") as f:
     f.write(str(evaluation))
