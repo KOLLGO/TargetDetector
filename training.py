@@ -68,7 +68,7 @@ logistic_pipeline = Pipeline(
             "sampler",
             RandomOverSampler(random_state=oversampling_seed),
         ),  # handle class imbalance
-        ("classifier", LogisticRegression(max_iter=10000, multi_class="multinomial")),
+        ("classifier", LogisticRegression(max_iter=10000)),
     ]
 )
 
@@ -182,7 +182,7 @@ with open(model_folder + "evaluation.txt", "w") as f:
 
 print("All data saved to your model folder!")"""
 
-# ------------------ Entry Point ------------------
+# ------------------ Entry Point ------------------1
 
 if __name__ == "__main__":
     pass
