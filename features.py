@@ -255,24 +255,31 @@ def feature_extraction_pipeline(df):
 
 
 # --------Get Feature Matrices---------
-def get_model_matrices(csv_path, vec_path):
+def get_model_matrices(csv_path: str, vec_path: str):
     """
-    in: csv file path
-    out: dfs: X_train, y_train, X_test, y_test
+    in: csv file path, verctorizer save path
+    out: X_train, y_train
     """
     print("Preprocessing data...")
-    _, X_train, X_test, X_train_tfidf, _, y_train, y_test = get_processed_dfs(
-        csv_path, vec_path
-    )  # function from preprocessing.py
+    X_train, X_train_tfidf = get_processed_dfs(csv_path, vec_path)
+    y_train = X_train["TAR"]  # get labels
     print("Starting feature extraction...")
-    X_train = get_train_matrix(X_train, X_train_tfidf, vec_path)
-    X_test = get_test_matrix(X_test, vec_path)
-    return X_train, y_train, X_test, y_test
+    df_features_train = feature_extraction_pipeline(X_train)
+    feature_names: list[str] = list(
+        df_features_train.columns
+    )  # save feature column names
+    joblib.dump(
+        feature_names, vec_path + "feature_names.pkl"
+    )  # Serialize feature column names
+    # convert and combine features and tfidf to sparse matrix
+    mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
+    X_train: csr_matrix = hstack([mat_features_train, X_train_tfidf])
+    return X_train, y_train
 
 
-def get_train_matrix(X_train, X_train_tfidf, vec_path):
+def get_train_matrix(X_train: pd.DataFrame, X_train_tfidf, vec_path: str):
     """
-    in: train df, train tfidf matrix, vectorizer path
+    in: train df, train tfidf matrix, vectorizer save path
     out: X_train
     """
     # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
@@ -289,19 +296,14 @@ def get_train_matrix(X_train, X_train_tfidf, vec_path):
     return X_train
 
 
-def get_test_matrix(X_test, vec_path):
+def get_test_matrix(csv_path: str, vec_path: str):
     """
-    in: test df, vectorizer path
-    out: X_test
+    in: csv path,vectorizer save path
+    out: sparse feature matrix
     """
-    texts = None
-    # decide how to extract texts based on data type
-    # pandas Series (from split_data)
-    if isinstance(X_test, pd.Series):
-        texts = X_test.values
-    # pandas DataFrame (from regular usage)
-    elif isinstance(X_test, pd.DataFrame):
-        texts = X_test["description_clean"].values
+    # load and preprocess data
+    X_test: pd.DataFrame = data_handling(csv_path)
+    texts = X_test["description_clean"].values
 
     # build feature df from texts
     df_features = pd.DataFrame({"id": range(len(texts)), "description": texts})
@@ -330,16 +332,7 @@ def get_test_matrix(X_test, vec_path):
     return X_test
 
 
-# --------- Build Feature Matrix for regular usage --------
-def build_feature_matrix(csv_path, vec_path):
-    """
-    in:
-        csv_path to csv with raw data
-        vec_path: prefix used when training to save vectorizer and feature names
-    out: sparse feature matrix
-    """
-    # load and preprocess data
-    df_preprocessed = data_handling(csv_path)
-    X_test = get_test_matrix(df_preprocessed, vec_path)
-
-    return X_test
+if __name__ == "__main__":
+    X_train, y_train = get_model_matrices("../tar.csv", "./")
+    print(X_train)
+    print(y_train)

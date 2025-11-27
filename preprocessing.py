@@ -20,21 +20,21 @@ except OSError:
 
 
 # ======== Preprocessing Pipeline ======== #
-def data_handling(file):
+def data_handling(file: str):
     """
-    in: csv file
+    in: csv file path
     out: cleaned dataframe
     """
 
     # data input: csv -> df
-    df_data = pd.read_csv(file, sep=";")
-    # df_data = df_data.head(3000)  # optional limit for faster testing
+    df_data: pd.DataFrame = pd.read_csv(file, sep=";")
+    df_data = df_data.head(3000)  # optional limit for faster testing
 
     # convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()
 
     # whitelist of pronouns to keep
-    whitelist = {
+    whitelist: set[str] = {
         "ich",
         "du",
         "er",
@@ -90,14 +90,14 @@ def data_handling(file):
     }
 
     # function to remove stopwords
-    def remove_stopwords(description):
+    def remove_stopwords(description: str):
         """
         in: description text
         out: description text without stopwords
         """
 
         doc = nlp(description)  # converts text to spacy-doc object with tokens
-        cleaned_tokens = [
+        cleaned_tokens: list[str] = [
             token.text
             for token in doc  # for every token in doc
             if not token.is_stop
@@ -106,27 +106,26 @@ def data_handling(file):
         return " ".join(cleaned_tokens)  # joins tokens back to string
 
     # remove hyperlinks
-    def remove_hyperlinks(description):
+    def remove_hyperlinks(description: str):
         """
         in: description text
         out: description text without hyperlinks
         """
         return re.sub(r"http[s]?://\S+", "", description)
 
-    # map umlauts to their replacements
-    umlaut_map = {
-        "ä": "ae",
-        "ö": "oe",
-        "ü": "ue",
-        "ß": "ss",
-    }
-
     # function to remove special characters
-    def remove_special_chars(description):
+    def remove_special_chars(description: str):
         """
         in: description text
         out: description text without special characters
         """
+        # map umlauts to their replacements
+        umlaut_map: dict[str, str] = {
+            "ä": "ae",
+            "ö": "oe",
+            "ü": "ue",
+            "ß": "ss",
+        }
 
         # replace all umlauts
         for umlaut, replacement in umlaut_map.items():
@@ -153,15 +152,15 @@ def data_handling(file):
     return df_data
 
 
-# ======== Data Split ======== #
-def split_data(df):
-    """
+# ======== Data Split (obsolete) ======== #
+"""def split_data(df):
+    \"""
     in: dataframe (cleaned)
     out: X_train -> train features
          X_test -> test features
          y_train -> train labels
          y_test -> test labels
-    """
+    \"""
 
     X = df["description_clean"]  # features
     y = df["TAR"]  # labels
@@ -178,16 +177,16 @@ def split_data(df):
     print(f"Test set size: {len(X_test)} ({len(X_test)/len(X)*100:.1f}%)")
 
     return X_train, X_test, y_train, y_test
+"""
 
-
-# ======== Oversampling ======== #
-def random_oversampling(X_train, y_train):
-    """
+# ======== Oversampling (obsolete) ======== #
+"""def random_oversampling(X_train, y_train):
+    \"""
     in: X_train -> training features
         y_train -> training labels
     out: X_resampled -> oversampled training features
          y_resampled -> oversampled training labels
-    """
+    \"""
     train_data = pd.DataFrame(
         {"description_clean": X_train, "TAR": y_train}
     )  # combining X and y into df
@@ -231,19 +230,18 @@ def random_oversampling(X_train, y_train):
     print(y_train_resampled.value_counts())
 
     return X_train_resampled, y_train_resampled
+"""
 
 
 # ======= TF-IDF feature engineering ======== #
-def tfidf_vectorizer(X_train_resampled, X_test, filepath):
+def tfidf_vectorizer(df: pd.DataFrame, filepath: str):
     """
-    in: X_train_resampled -> oversampled training features
-        X_test -> test features
+    in: df -> cleaned DataFrame
         filepath -> path to save the vectorizer
-    out: X_train_tfidf -> TF-IDF transformed training features (sparse matrix)
-         X_test_tfidf -> TF-IDF transformed test features (sparse matrix)
+    out: X_train_tfidf -> TF-IDF transformed train features (sparse matrix)
     """
 
-    vectorizer = TfidfVectorizer(
+    vectorizer: TfidfVectorizer = TfidfVectorizer(
         max_features=10000,  # limit feature space dimensionality
         min_df=1,  # mininmal document frequency for a token to be included (avoids overfitting)
         sublinear_tf=True,  # logarithmic scaling for better for better weighting
@@ -252,52 +250,30 @@ def tfidf_vectorizer(X_train_resampled, X_test, filepath):
     )
 
     X_train_tfidf = vectorizer.fit_transform(
-        X_train_resampled
+        df["description_clean"]
     )  # fit and transform train data
-    X_test_tfidf = vectorizer.transform(X_test)  # only transform test data
 
-    # print dimensions of tf-idf matrices
-    print("Train shape:", X_train_tfidf.shape)
-    print("Test shape:", X_test_tfidf.shape)
+    print("Train shape:", X_train_tfidf.shape)  # print dimensions of tf-idf matrices
 
-    joblib.dump(vectorizer, filepath + "tfidf_vectorizer.pkl")  # save vectorizer
-
-    # save tf-idf features to csv (optional)
-    """X_train_tfidf_df = pd.DataFrame(
-        X_train_tfidf.toarray(), columns=vectorizer.get_feature_names_out()
-    )
-    X_train_tfidf_df.to_csv("tfidf_train_oversampled.csv", index=False)"""
-
-    return X_train_tfidf, X_test_tfidf
+    joblib.dump(
+        vectorizer, filepath + "tfidf_vectorizer.pkl"
+    )  # optional: save vectorizer
+    return X_train_tfidf
 
 
 # ======= Data for feature extraction ======== #
-def get_processed_dfs(csv_path, vec_path):
+def get_processed_dfs(csv_path: str, vec_path: str):
     """
-    in: csv file path
-    out: df with preprocessed data
+    in: csv file path, vectorizer save path
+    out: df with preprocessed data, vectorized training dataset
     """
-    df_preprocessed = data_handling(csv_path)
-    X_train, X_test, y_train, y_test = split_data(df_preprocessed)
-    X_train_resampled, y_train_resampled = random_oversampling(X_train, y_train)
-    x_train_tfidf, x_test_tfidf = tfidf_vectorizer(X_train_resampled, X_test, vec_path)
-    return (
-        df_preprocessed,
-        X_train_resampled,
-        X_test,
-        x_train_tfidf,
-        x_test_tfidf,
-        y_train_resampled,
-        y_test,
-    )
+    df_preprocessed: pd.DataFrame = data_handling(csv_path)
+    X_train_tfidf = tfidf_vectorizer(df_preprocessed, vec_path)
+    return (df_preprocessed, X_train_tfidf)
 
 
 # ======= Test ======== #
 if __name__ == "__main__":
-    df_preprocessed = data_handling("tar.csv")
-    print(df_preprocessed)
-
-    X_train, X_test, y_train, y_test = split_data(df_preprocessed)
-    X_train_resampled, y_train_resampled = random_oversampling(X_train, y_train)
-
-    tfidf_vectorizer(X_train_resampled, X_test)
+    df_test, X_train_tfidf = get_processed_dfs("../tar.csv", "./")
+    print(df_test.head())
+    print(X_train_tfidf)

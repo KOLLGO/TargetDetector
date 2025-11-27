@@ -26,7 +26,7 @@ print("data file: " + csv_path)
 print("model folder: " + model_folder)
 print()
 
-X_train, y_train, X_test, y_test = get_model_matrices(
+X_train, y_train = get_model_matrices(
     csv_path, model_folder
 )  # Get the training feature matrix and labels
 
@@ -128,10 +128,7 @@ joblib.dump(best_model, filename)  # Serialize and save the model
 
 print("Evaluating model...")
 evaluation = None
-# evaluation = evaluate(X_test, y_test)
-y_pred = best_model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print("accuracy:" + str(accuracy))
+# y_pred = best_model.predict(X_test)
 # ---------------- serialize Evaluation Results ----------------
 with open(model_folder + "evaluation.txt", "w") as f:
     f.write(str(evaluation))
