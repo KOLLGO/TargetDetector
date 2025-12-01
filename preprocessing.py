@@ -3,6 +3,7 @@ import joblib
 import pandas as pd
 import spacy
 import re
+from scipy.sparse import csr_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -179,14 +180,15 @@ def data_handling(file: str):
     return X_train, X_test, y_train, y_test
 """
 
+
 # ======== Oversampling (obsolete) ======== #
-"""def random_oversampling(X_train, y_train):
-    \"""
+def random_oversampling(X_train: csr_matrix, y_train: csr_matrix):
+    """
     in: X_train -> training features
         y_train -> training labels
     out: X_resampled -> oversampled training features
          y_resampled -> oversampled training labels
-    \"""
+    """
     train_data = pd.DataFrame(
         {"description_clean": X_train, "TAR": y_train}
     )  # combining X and y into df
@@ -230,7 +232,6 @@ def data_handling(file: str):
     print(y_train_resampled.value_counts())
 
     return X_train_resampled, y_train_resampled
-"""
 
 
 # ======= TF-IDF feature engineering ======== #

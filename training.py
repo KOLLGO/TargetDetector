@@ -35,14 +35,9 @@ X_train, y_train = get_model_matrices(
 )  # Get the training feature matrix and labels
 
 # ------------------ Create Pipelines ------------------
-oversampling_seed: int = 42
 svc_pipeline = Pipeline(
     [
         ("scaler", MaxAbsScaler()),  # scales the values
-        (
-            "sampler",
-            RandomOverSampler(random_state=oversampling_seed),
-        ),  # handle class imbalance
         (
             "svc",
             SVC(kernel="rbf", probability=True),
@@ -52,11 +47,6 @@ svc_pipeline = Pipeline(
 
 naive_bayes_pipeline = Pipeline(
     [
-        ("scaler", MaxAbsScaler()),
-        (
-            "sampler",
-            RandomOverSampler(random_state=oversampling_seed),
-        ),  # handle class imbalance
         ("classifier", MultinomialNB()),
     ]
 )
@@ -64,13 +54,24 @@ naive_bayes_pipeline = Pipeline(
 logistic_pipeline = Pipeline(
     [
         ("scaler", MaxAbsScaler()),
-        (
-            "sampler",
-            RandomOverSampler(random_state=oversampling_seed),
-        ),  # handle class imbalance
         ("classifier", LogisticRegression(max_iter=10000)),
     ]
 )
+
+# ------------------ Hyperparameter Grid ------------------
+svc_param_grid = {
+    "svc__C": [0.1, 1, 10],
+    "svc__gamma": [0.001, 0.01, 0.1, "scale"],
+}
+
+logistic_param_grid = {
+    "classifier__C": [0.1, 1, 10],
+    "classifier__solver": ["lbfgs", "newton-cg"],
+}
+
+naive_bayes_param_grid = {
+    "classifier__alpha": [1.0, 0.1, 0.01],
+}
 
 # ------------------ Meta Classifier -------------------
 meta_classifier = VotingClassifier(
@@ -88,15 +89,6 @@ meta_classifier = VotingClassifier(
 outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
-param_grid = {
-    "svc__svc__C": [0.1, 1, 10],
-    "svc__svc__gamma": [0.001, 0.01, 0.1, "scale"],
-    "naive_bayes__classifier__alpha": [1.0, 0.1, 0.01],
-    "logistic__classifier__C": [0.1, 1, 10],
-    "logistic__classifier__solver": ["lbfgs", "newton-cg"],
-    "voting": ["soft", "hard"],
-}
-
 fold_metrics = {"precision": [], "recall": [], "f1": []}
 
 for fold, (train_idx, val_idx) in enumerate(outer_cv.split(X_train, y_train)):
@@ -107,18 +99,60 @@ for fold, (train_idx, val_idx) in enumerate(outer_cv.split(X_train, y_train)):
     X_val_fold = X_train[val_idx]
     y_train_fold = y_train[train_idx]
     y_val_fold = y_train[val_idx]
+    # Oversampling
+    oversampler = RandomOverSampler(random_state=42)
+    X_train_fold, y_train_fold = oversampler.fit_resample(X_train_fold, y_train_fold)
 
     print(f"Searching hyperparameters  for fold {fold + 1}...")
-    grid_search = GridSearchCV(
-        estimator=meta_classifier,  # The model to be evaluated -> Pipeline (StandardScaler + SVC)
-        param_grid=param_grid,  # The parameter combinations to be tested
-        cv=inner_cv,  # Number of Folds for Cross-Validation, 5 is often considered an optimal value
-        scoring="f1_macro",  # Evaluation metric
-        verbose=2,  # Display progress & status during the search, 2 = detailed output
-        n_jobs=-1,  # Use all available CPU-cores
+
+    # SVC
+    gs_svc = GridSearchCV(
+        estimator=svc_pipeline,
+        param_grid=svc_param_grid,
+        cv=inner_cv,
+        scoring="f1_macro",
+        n_jobs=-1,
+        verbose=2,
     )
-    grid_search.fit(X_train_fold, y_train_fold)
-    meta_classifier = grid_search.best_estimator_
+    gs_svc.fit(X_train_fold, y_train_fold)
+    best_svc = gs_svc.best_estimator_
+
+    # Logistic Reegression
+    gs_log = GridSearchCV(
+        estimator=logistic_pipeline,
+        param_grid=logistic_param_grid,
+        cv=inner_cv,
+        scoring="f1_macro",
+        n_jobs=-1,
+        verbose=2,
+    )
+    gs_log.fit(X_train_fold, y_train_fold)
+    best_log = gs_log.best_estimator_
+
+    # Naive Bayes
+    gs_nb = GridSearchCV(
+        estimator=naive_bayes_pipeline,
+        param_grid=naive_bayes_param_grid,
+        cv=inner_cv,
+        scoring="f1_macro",
+        n_jobs=-1,
+        verbose=2,
+    )
+    gs_nb.fit(X_train_fold, y_train_fold)
+    best_nb = gs_nb.best_estimator_
+
+    # build and train meta classifier
+    meta_classifier = VotingClassifier(
+        estimators=[
+            ("svc", best_svc),
+            ("naive_bayes", best_nb),
+            ("logistic", best_log),
+        ],
+        voting="soft",
+        n_jobs=-1,
+    )
+    meta_classifier.fit(X_train_fold, y_train_fold)
+
     # Predictions
     y_pred = meta_classifier.predict(X_val_fold)
 
