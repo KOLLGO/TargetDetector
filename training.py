@@ -175,9 +175,9 @@ for fold, (train_idx, val_idx) in enumerate(outer_cv.split(X_train, y_train)):
     with open(model_folder + f"predictions_fold_{fold + 1}.txt", "w") as f:
         for pred in zip(X_val_fold, y_pred):
             f.write(f"{pred}\n")
-        f.write("\n" + precision)
-        f.write("\n" + recall)
-        f.write("\n" + f1)
+        f.write("\n" + f"{precision:.4f}")
+        f.write("\n" + f"{recall:.4f}")
+        f.write("\n" + f"{f1:.4f}")
 
 # ------------------ final averaged results ------------------
 print("--------------- final results ---------------")
