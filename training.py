@@ -171,6 +171,14 @@ for fold, (train_idx, val_idx) in enumerate(outer_cv.split(X_train, y_train)):
     print(f"  Recall (macro):    {recall:.4f}")
     print(f"  F1-Score (macro):  {f1:.4f}")
 
+    # serialize predictions
+    with open(model_folder + f"predictions_fold_{fold + 1}.txt", "w") as f:
+        for pred in zip(X_val_fold, y_pred):
+            f.write(f"{pred}\n")
+        f.write("\n" + precision)
+        f.write("\n" + recall)
+        f.write("\n" + f1)
+
 # ------------------ final averaged results ------------------
 print("--------------- final results ---------------")
 print(f"{'='*50}")

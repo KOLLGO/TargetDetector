@@ -248,6 +248,7 @@ def feature_extraction_pipeline(df):
         "bürger",
         "welt",
         "nation",
+        "pegida",
         "bevölkerung",
         "der",
         "die",
