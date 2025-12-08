@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.metrics import precision_recall_fscore_support
 from imblearn.over_sampling import RandomOverSampler
+from scipy.sparse import save_npz, load_npz
 
 # GridSearch, K-Fold CV
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
@@ -181,51 +182,51 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
     y_train_fold = y_train[train_idx]
     y_val_fold = y_train[val_idx]
 
-    # Save fold data as CSV
-    # Convert sparse matrices to dense DataFrames if necessary
-    try:
-        # if X_train is a DataFrame, use column names
-        col_names = list(X_train.columns) if hasattr(X_train, "columns") else None
-    except Exception:
-        col_names = None
+    # Save fold data as sparse NPZ (memory-efficient)
+    # Ensure X_train_fold and X_val_fold are sparse CSR matrices
+    from scipy.sparse import csr_matrix
 
-    if col_names is None:
-        # fallback: load from saved feature_names
-        try:
-            col_names = joblib.load(model_folder + "feature_names.pkl")
-        except Exception:
-            # generate generic column names
-            try:
-                n_cols = X_train.shape[1]
-            except Exception:
-                n_cols = X_train_fold.shape[1]
-            col_names = [f"feature_{i}" for i in range(n_cols)]
-
-    # Convert sparse to dense if needed
-    if hasattr(X_train_fold, "toarray"):
-        X_train_fold_dense = X_train_fold.toarray()
-        X_val_fold_dense = X_val_fold.toarray()
+    if not hasattr(X_train_fold, "tocsr"):
+        # convert to sparse if dense
+        X_train_fold = csr_matrix(X_train_fold)
+        X_val_fold = csr_matrix(X_val_fold)
     else:
-        X_train_fold_dense = X_train_fold
-        X_val_fold_dense = X_val_fold
+        X_train_fold = X_train_fold.tocsr()
+        X_val_fold = X_val_fold.tocsr()
 
-    # Create DataFrames with feature names
-    df_train_fold = pd.DataFrame(X_train_fold_dense, columns=col_names)
-    df_train_fold.insert(0, "label", np.asarray(y_train_fold).ravel())
-    df_train_fold.insert(0, "id", train_idx)
+    # Save sparse feature matrices as NPZ (compressed)
+    save_npz(model_folder + f"fold_{fold+1}_X_train.npz", X_train_fold)
+    save_npz(model_folder + f"fold_{fold+1}_X_val.npz", X_val_fold)
 
-    df_val_fold = pd.DataFrame(X_val_fold_dense, columns=col_names)
-    df_val_fold.insert(0, "label", np.asarray(y_val_fold).ravel())
-    df_val_fold.insert(0, "id", val_idx)
-
-    # Save to CSV
-    df_train_fold.to_csv(
-        model_folder + f"fold_{fold+1}_train.csv", sep=";", index=False
+    # Save labels and indices as numpy compressed format
+    np.savez_compressed(
+        model_folder + f"fold_{fold+1}_y_and_idx.npz",
+        y_train=np.asarray(y_train_fold).ravel(),
+        y_val=np.asarray(y_val_fold).ravel(),
+        train_idx=train_idx,
+        val_idx=val_idx,
     )
-    df_val_fold.to_csv(model_folder + f"fold_{fold+1}_val.csv", sep=";", index=False)
 
-    print(f"Saved fold {fold+1} train/val data to CSV")
-    results_file.write(f"Saved fold {fold+1} train/val data to CSV\n")
+    print(f"Saved fold {fold+1} train/val data (sparse NPZ format)")
+    results_file.write(f"Saved fold {fold+1} train/val data (sparse NPZ format)\n")
+
+    # Estimate and log saved space (optional)
+    try:
+        x_train_size_mb = (
+            os.path.getsize(model_folder + f"fold_{fold+1}_X_train.npz") / 1024 / 1024
+        )
+        x_val_size_mb = (
+            os.path.getsize(model_folder + f"fold_{fold+1}_X_val.npz") / 1024 / 1024
+        )
+        y_idx_size_mb = (
+            os.path.getsize(model_folder + f"fold_{fold+1}_y_and_idx.npz") / 1024 / 1024
+        )
+        total_mb = x_train_size_mb + x_val_size_mb + y_idx_size_mb
+        msg = f"  Fold {fold+1} storage: {total_mb:.2f} MB (X_train: {x_train_size_mb:.2f} MB, X_val: {x_val_size_mb:.2f} MB, y+idx: {y_idx_size_mb:.2f} MB)\n"
+        print(msg, end="")
+        results_file.write(msg)
+    except Exception:
+        pass
 
     # GridSearchCV for SVC
     gs_svc = GridSearchCV(
