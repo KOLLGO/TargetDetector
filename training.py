@@ -6,6 +6,7 @@ import sys
 
 # Data processing
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.metrics import precision_recall_fscore_support
 from imblearn.over_sampling import RandomOverSampler
@@ -25,8 +26,8 @@ from sklearn.ensemble import VotingClassifier, StackingClassifier
 # Pipelining
 from imblearn.pipeline import Pipeline
 
-
-# import joblib
+# Serialization
+import joblib
 
 # Own functions
 from features import get_model_matrices
@@ -158,17 +159,68 @@ metrics_base_models = {
 k_base_models = StratifiedKFold(n_splits=3, shuffle=True, random_state=seed)
 k_meta_classifier = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
+# Open results file for writing
+results_file = open(model_folder + "training_results.txt", "w")
+results_file.write("=============== MODEL TRAINING RESULTS ===============\n")
+
 
 # =============== OUTER FOLD LOOP =============== #
 
 for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_train)):
     print(f"=============== Fold {fold+1} of 5 ===============")
+    results_file.write(f"=============== Fold {fold+1} of 5 ===============\n")
 
     # Split for this fold
     X_train_fold = X_train[train_idx]
     X_val_fold = X_train[val_idx]
     y_train_fold = y_train[train_idx]
     y_val_fold = y_train[val_idx]
+
+    # Save fold data as CSV
+    # Convert sparse matrices to dense DataFrames if necessary
+    try:
+        # if X_train is a DataFrame, use column names
+        col_names = list(X_train.columns) if hasattr(X_train, "columns") else None
+    except Exception:
+        col_names = None
+
+    if col_names is None:
+        # fallback: load from saved feature_names
+        try:
+            col_names = joblib.load(model_folder + "feature_names.pkl")
+        except Exception:
+            # generate generic column names
+            try:
+                n_cols = X_train.shape[1]
+            except Exception:
+                n_cols = X_train_fold.shape[1]
+            col_names = [f"feature_{i}" for i in range(n_cols)]
+
+    # Convert sparse to dense if needed
+    if hasattr(X_train_fold, "toarray"):
+        X_train_fold_dense = X_train_fold.toarray()
+        X_val_fold_dense = X_val_fold.toarray()
+    else:
+        X_train_fold_dense = X_train_fold
+        X_val_fold_dense = X_val_fold
+
+    # Create DataFrames with feature names
+    df_train_fold = pd.DataFrame(X_train_fold_dense, columns=col_names)
+    df_train_fold.insert(0, "label", np.asarray(y_train_fold).ravel())
+    df_train_fold.insert(0, "id", train_idx)
+
+    df_val_fold = pd.DataFrame(X_val_fold_dense, columns=col_names)
+    df_val_fold.insert(0, "label", np.asarray(y_val_fold).ravel())
+    df_val_fold.insert(0, "id", val_idx)
+
+    # Save to CSV
+    df_train_fold.to_csv(
+        model_folder + f"fold_{fold+1}_train.csv", sep=";", index=False
+    )
+    df_val_fold.to_csv(model_folder + f"fold_{fold+1}_val.csv", sep=";", index=False)
+
+    print(f"Saved fold {fold+1} train/val data to CSV")
+    results_file.write(f"Saved fold {fold+1} train/val data to CSV\n")
 
     # GridSearchCV for SVC
     gs_svc = GridSearchCV(
@@ -239,11 +291,13 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         metrics_base_models[name]["recall"].append(r_bm)
         metrics_base_models[name]["f1"].append(f_bm)
 
-        print(f"Macro values for {name}:")
-        print(f"Precision: {p_bm:.4f}")
-        print(f"Recall: {r_bm:.4f}")
-        print(f"F1 Score: {f_bm:.4f}")
-        print(f"=" * 50)
+        msg = f"Macro values for {name}:\n"
+        msg += f"Precision: {p_bm:.4f}\n"
+        msg += f"Recall: {r_bm:.4f}\n"
+        msg += f"F1 Score: {f_bm:.4f}\n"
+        msg += f"=" * 50 + "\n"
+        print(msg, end="")
+        results_file.write(msg)
 
     # =============== VOTING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
     base_models_vc = [
@@ -272,11 +326,14 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
     metrics_voting["recall"].append(r_vc)
     metrics_voting["f1"].append(f_vc)
 
-    print(f"VotingClassifier macro results for fold {fold+1}:")
-    print(f"Precision: {p_vc:.4f}")
-    print(f"Recall: {r_vc:.4f}")
-    print(f"F1 Score: {f_vc:.4f}")
-    print(f"=" * 50)
+    msg = f"VotingClassifier macro results for fold {fold+1}:\n"
+    msg += f"Precision: {p_vc:.4f}\n"
+    msg += f"Recall: {r_vc:.4f}\n"
+    msg += f"F1 Score: {f_vc:.4f}\n"
+    msg += f"=" * 50 + "\n"
+
+    print(msg, end="")
+    results_file.write(msg)
 
     # =============== STACKING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
     base_models_sc = [
@@ -310,60 +367,62 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
     metrics_stacking["recall"].append(r_sc)
     metrics_stacking["f1"].append(f_sc)
 
-    print(f"StackingClassifier macro results for fold {fold+1}:")
-    print(f"Precision: {p_sc:.4f}")
-    print(f"Recall: {r_sc:.4f}")
-    print(f"F1 Score: {f_sc:.4f}")
-    print("=" * 50)
+    msg = f"StackingClassifier macro results for fold {fold+1}:\n"
+    msg += f"Precision: {p_sc:.4f}\n"
+    msg += f"Recall: {r_sc:.4f}\n"
+    msg += f"F1 Score: {f_sc:.4f}\n"
+    msg += f"=" * 50 + "\n"
 
+    print(msg, end="")
+    results_file.write(msg)
+    results_file.write("\n")
 
 # =============== FINAL AVERAGED RESULTS =============== #
 print("=============== FINAL RESULTS ===============")
+results_file.write("=============== FINAL RESULTS ===============\n")
 
 # VotingClassifier macro results
-print(f"VotingClassifier macro values:")
-print(
-    f"    Average precision: {np.mean(metrics_voting["precision"]):.4f} (+/- {np.std(metrics_voting["precision"]):.4f})"
-)
-print(
-    f"    Average recall: {np.mean(metrics_voting["recall"]):.4f} (+/- {np.std(metrics_voting["recall"]):.4f})"
-)
-print(
-    f"    Average f1 score: {np.mean(metrics_voting["f1"]):.4f} (+/- {np.std(metrics_voting["f1"]):.4f})"
-)
-print(f"-----")
-
-# VotingClassifier fold results
-print(f"Results per fold:")
+msg = f"VotingClassifier macro values:\n"
+msg += f"    Average precision: {np.mean(metrics_voting['precision']):.4f} (+/- {np.std(metrics_voting['precision']):.4f})\n"
+msg += f"    Average recall: {np.mean(metrics_voting['recall']):.4f} (+/- {np.std(metrics_voting['recall']):.4f})\n"
+msg += f"    Average f1 score: {np.mean(metrics_voting['f1']):.4f} (+/- {np.std(metrics_voting['f1']):.4f})\n"
+msg += f"-----\n"
+msg += f"Results per fold:\n"
 
 for i in range(len(metrics_voting["precision"])):
-    print(
-        f"Fold {i+1}: P={metrics_voting["precision"][i]:.4f}, R={metrics_voting["recall"][i]:.4f}, F1={metrics_voting["f1"][i]:.4f}"
-    )
+    msg += f"Fold {i+1}: P={metrics_voting['precision'][i]:.4f}, R={metrics_voting['recall'][i]:.4f}, F1={metrics_voting['f1'][i]:.4f}\n"
 
-print()
-print(f"=" * 30)
-print()
+msg += "\n" + "=" * 30 + "\n\n"
+
+print(msg, end="")
+results_file.write(msg)
 
 # StackingClassifier macro results
-print(f"StackingClassifier macro values:")
-print(
-    f"    Average precision: {np.mean(metrics_stacking['precision']):.4f} (+/- {np.std(metrics_stacking['precision']):.4f})"
-)
-print(
-    f"    Average recall: {np.mean(metrics_stacking['recall']):.4f} (+/- {np.std(metrics_stacking['recall']):.4f})"
-)
-print(
-    f"    Average f1 score: {np.mean(metrics_stacking['f1']):.4f} (+/- {np.std(metrics_stacking['f1']):.4f})"
-)
-print(f"-----")
-
-# StackingClassifier fold results
-print(f"Results per fold:")
+msg = f"StackingClassifier macro values:\n"
+msg += f"    Average precision: {np.mean(metrics_stacking['precision']):.4f} (+/- {np.std(metrics_stacking['precision']):.4f})\n"
+msg += f"    Average recall: {np.mean(metrics_stacking['recall']):.4f} (+/- {np.std(metrics_stacking['recall']):.4f})\n"
+msg += f"    Average f1 score: {np.mean(metrics_stacking['f1']):.4f} (+/- {np.std(metrics_stacking['f1']):.4f})\n"
+msg += f"-----\n"
+msg += f"Results per fold:\n"
 
 for i in range(len(metrics_stacking["precision"])):
-    print(
-        f"Fold {i+1}: P={metrics_stacking['precision'][i]:.4f}, R={metrics_stacking['recall'][i]:.4f}, F1={metrics_stacking['f1'][i]:.4f}"
-    )
+    msg += f"Fold {i+1}: P={metrics_stacking['precision'][i]:.4f}, R={metrics_stacking['recall'][i]:.4f}, F1={metrics_stacking['f1'][i]:.4f}\n"
 
-# Base models average results
+msg += "\n"
+
+print(msg, end="")
+results_file.write(msg)
+
+# Base models results
+msg = f"Base Models macro values (averaged across folds):\n"
+for name in metrics_base_models:
+    msg += f"\n{name.upper()}:\n"
+    msg += f"    Average precision: {np.mean(metrics_base_models[name]['precision']):.4f} (+/- {np.std(metrics_base_models[name]['precision']):.4f})\n"
+    msg += f"    Average recall: {np.mean(metrics_base_models[name]['recall']):.4f} (+/- {np.std(metrics_base_models[name]['recall']):.4f})\n"
+    msg += f"    Average f1 score: {np.mean(metrics_base_models[name]['f1']):.4f} (+/- {np.std(metrics_base_models[name]['f1']):.4f})\n"
+
+print(msg, end="")
+results_file.write(msg)
+
+results_file.close()
+print(f"\nResults saved to: {model_folder}training_results.txt")
