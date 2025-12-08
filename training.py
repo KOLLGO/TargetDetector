@@ -100,8 +100,8 @@ rf_param_grid = {
 seed = 42  # Oversampling seed
 
 strategy = {
-    0: largest_count * 0.4,  # group
-    1: largest_count * 0.6,  # individual
+    0: largest_count,  # * 0.4,  # group
+    1: largest_count,  # * 0.6,  # individual
     2: largest_count,  # public
 }
 
@@ -156,13 +156,18 @@ metrics_base_models = {
 }
 
 # Splits for K-Fold CV
-k_base_models = StratifiedKFold(n_splits=3, shuffle=True, random_state=seed)
-k_meta_classifier = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+inner_k = 3
+outer_k = 5
+k_base_models = StratifiedKFold(n_splits=inner_k, shuffle=True, random_state=seed)
+k_meta_classifier = StratifiedKFold(n_splits=outer_k, shuffle=True, random_state=seed)
 
 # Open results file for writing
 results_file = open(model_folder + "training_results.txt", "w")
 results_file.write("=============== MODEL TRAINING RESULTS ===============\n")
-
+results_file.write(f"Inner K-Fold splits: {inner_k}\n")
+results_file.write(f"Outer K-Fold splits: {outer_k}\n")
+results_file.write(f"Seed: {seed}\n")
+results_file.write("Oversampling_strategy: " + str(strategy) + "\n")
 
 # =============== OUTER FOLD LOOP =============== #
 
@@ -229,7 +234,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=-1,
+        n_jobs=7,
     )
 
     gs_svc.fit(X_train_fold, y_train_fold)
@@ -242,7 +247,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=-1,
+        n_jobs=7,
     )
 
     gs_log.fit(X_train_fold, y_train_fold)
@@ -255,7 +260,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=-1,
+        n_jobs=7,
     )
 
     gs_nb.fit(X_train_fold, y_train_fold)
@@ -268,7 +273,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=-1,
+        n_jobs=7,
     )
 
     gs_rf.fit(X_train_fold, y_train_fold)
@@ -309,7 +314,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
 
     # Define VotingClassifier
     voting_clf = VotingClassifier(
-        estimators=base_models_vc, voting="soft", weights=[1, 1, 1, 1], n_jobs=-1
+        estimators=base_models_vc, voting="soft", weights=[1, 1, 1, 1], n_jobs=7
     )
 
     # Train VotingClassifier on (resampled) train split for this fold
@@ -349,7 +354,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         final_estimator=LogisticRegression(max_iter=1000),
         stack_method="predict_proba",
         passthrough=False,
-        n_jobs=-1,
+        n_jobs=7,
         verbose=0,
     )
 
