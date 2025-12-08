@@ -1,21 +1,38 @@
+# =============== IMPORTS =============== #
+
+# General
 import os
 import sys
+
+# Data processing
 import numpy as np
-import joblib
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.metrics import precision_recall_fscore_support
+from imblearn.over_sampling import RandomOverSampler
+
+# GridSearch, K-Fold CV
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
+
+# Base models
 from sklearn.svm import SVC
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import VotingClassifier
-from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.preprocessing import MaxAbsScaler
+from sklearn.ensemble import RandomForestClassifier
+
+# Meta classifier
+from sklearn.ensemble import VotingClassifier, StackingClassifier
+
+# Pipelining
 from imblearn.pipeline import Pipeline
-from sklearn.metrics import precision_recall_fscore_support
-from imblearn.over_sampling import RandomOverSampler
+
+
+# import joblib
+
+# Own functions
 from features import get_model_matrices
 
 
-# ------------------ Prepare Data ------------------
-
+# =============== DATA PREPARATION =============== #
 csv_path = sys.argv[1]
 model_folder = sys.argv[2]
 
@@ -25,206 +42,328 @@ if not model_folder.endswith("/"):
 if not os.path.exists(model_folder):
     os.makedirs(model_folder)
 
-print("----------------- Model Training -----------------")
-print("data file: " + csv_path)
-print("model folder: " + model_folder)
+print("=============== MODEL TRAINING ===============")
+print(f"Data file: {csv_path}")
+print(f"Model folder: {model_folder}")
 print()
 
-X_train, y_train = get_model_matrices(
-    csv_path, model_folder
-)  # Get the training feature matrix and labels
+# Get training feature matrix and labels
+X_train, y_train = get_model_matrices(csv_path, model_folder)
 
-# ------------------ Create Pipelines ------------------
-svc_pipeline = Pipeline(
-    [
-        ("scaler", MaxAbsScaler()),  # scales the values
-        (
-            "svc",
-            SVC(kernel="rbf", probability=True),
-        ),  # SVC = Support Vector Classifier, using the radial basis function (RBF) Kernel
-    ]
-)
+# Get class distribution and largest class
+print("Class distribution:")
+unique, counts = np.unique(y_train, return_counts=True)
 
-naive_bayes_pipeline = Pipeline(
-    [
-        ("classifier", MultinomialNB()),
-    ]
-)
+for u, c in zip(unique, counts):
+    print(f"{u}: {c}")
 
-logistic_pipeline = Pipeline(
+max_count_index = np.argmax(counts)
+largest_class = unique[max_count_index]
+largest_count = counts[max_count_index]
+
+print(f"Largest class: {largest_class}, count: {largest_count}")
+
+
+# =============== GRIDSEARCH PARAMETERS =============== #
+
+# SVC
+svc_param_grid = {
+    "svc__C": [0.1, 1, 3, 10, 30],
+    "svc__gamma": [0.001, 0.003, 0.01, 0.1, "scale"],
+    "svc__class_weight": ["balanced"],
+}
+
+# Logistic regression
+log_param_grid = {
+    "log__C": [0.1, 1, 3, 10],
+    "log__solver": ["lbfgs", "newton-cg"],
+    "log__class_weight": ["balanced"],
+}
+
+# MulitnomialNB
+nb_param_grid = {
+    "nb__alpha": [0.01, 0.1, 1],
+    "nb__fit_prior": [True, False],
+}
+
+# RandomForest
+rf_param_grid = {
+    "rf__n_estimators": [100, 200, 300, 400, 500],
+    "rf__max_depth": [None, 10, 20, 30, 40, 50],
+    "rf__min_samples_split": [2, 5, 10],
+    "rf__class_weight": ["balanced"],
+}
+
+
+# =============== OVERSAMPLING STRATEGY =============== #
+seed = 42  # Oversampling seed
+
+strategy = {
+    0: largest_count * 0.4,  # group
+    1: largest_count * 0.6,  # individual
+    2: largest_count,  # public
+}
+
+# =============== PIPELINE CREATION =============== #
+
+# SVC
+svc_pipe = Pipeline(
     [
         ("scaler", MaxAbsScaler()),
-        ("classifier", LogisticRegression(max_iter=10000)),
+        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
+        ("svc", SVC(kernel="rbf", probability=True)),
     ]
 )
 
-# ------------------ Hyperparameter Grid ------------------
-svc_param_grid = {
-    "svc__C": [0.1, 1, 10],
-    "svc__gamma": [0.001, 0.01, 0.1, "scale"],
-}
+# Logistic Regression
+log_pipe = Pipeline(
+    [
+        ("scaler", MaxAbsScaler()),
+        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
+        ("log", LogisticRegression(max_iter=10000)),
+    ]
+)
 
-logistic_param_grid = {
-    "classifier__C": [0.1, 1, 10],
-    "classifier__solver": ["lbfgs", "newton-cg"],
-}
+# MultinomialNB
+nb_pipe = Pipeline(
+    [
+        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
+        ("nb", MultinomialNB()),
+    ]
+)
 
-naive_bayes_param_grid = {
-    "classifier__alpha": [1.0, 0.1, 0.01],
-}
-
-# ------------------ Meta Classifier -------------------
-meta_classifier = VotingClassifier(
-    estimators=[
-        ("svc", svc_pipeline),
-        ("naive_bayes", naive_bayes_pipeline),
-        ("logistic", logistic_pipeline),
-    ],
-    voting="soft",  # weighted probabilities
-    n_jobs=-1,  # all available CPU-cores
+# RandomForest
+rf_pipe = Pipeline(
+    [
+        # ("scaler", MaxAbsScaler()),  # not useful
+        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
+        ("rf", RandomForestClassifier()),
+    ]
 )
 
 
-# ------------------ K-Fold CV ------------------
-outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+# =============== EVALUATION METRICS =============== #
 
-fold_metrics = {"precision": [], "recall": [], "f1": []}
+metrics_voting = {"precision": [], "recall": [], "f1": []}
+metrics_stacking = {"precision": [], "recall": [], "f1": []}
 
-for fold, (train_idx, val_idx) in enumerate(outer_cv.split(X_train, y_train)):
-    print(f"----------------Outer Fold--------------\n {fold + 1}/5")
+metrics_base_models = {
+    "svc": {"precision": [], "recall": [], "f1": []},
+    "log": {"precision": [], "recall": [], "f1": []},
+    "nb": {"precision": [], "recall": [], "f1": []},
+    "rf": {"precision": [], "recall": [], "f1": []},
+}
+
+# Splits for K-Fold CV
+k_base_models = StratifiedKFold(n_splits=3, shuffle=True, random_state=seed)
+k_meta_classifier = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+
+
+# =============== OUTER FOLD LOOP =============== #
+
+for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_train)):
+    print(f"=============== Fold {fold+1} of 5 ===============")
 
     # Split for this fold
     X_train_fold = X_train[train_idx]
     X_val_fold = X_train[val_idx]
     y_train_fold = y_train[train_idx]
     y_val_fold = y_train[val_idx]
-    # Oversampling
-    oversampler = RandomOverSampler(random_state=42)
-    X_train_fold, y_train_fold = oversampler.fit_resample(X_train_fold, y_train_fold)
 
-    print(f"Searching hyperparameters  for fold {fold + 1}...")
-
-    # SVC
+    # GridSearchCV for SVC
     gs_svc = GridSearchCV(
-        estimator=svc_pipeline,
+        estimator=svc_pipe,
         param_grid=svc_param_grid,
-        cv=inner_cv,
+        cv=k_base_models,
         scoring="f1_macro",
-        n_jobs=-1,
         verbose=2,
+        n_jobs=-1,
     )
+
     gs_svc.fit(X_train_fold, y_train_fold)
     best_svc = gs_svc.best_estimator_
 
-    # Logistic Reegression
+    # GridSearchCV for Logistic Regression
     gs_log = GridSearchCV(
-        estimator=logistic_pipeline,
-        param_grid=logistic_param_grid,
-        cv=inner_cv,
+        estimator=log_pipe,
+        param_grid=log_param_grid,
+        cv=k_base_models,
         scoring="f1_macro",
-        n_jobs=-1,
         verbose=2,
+        n_jobs=-1,
     )
+
     gs_log.fit(X_train_fold, y_train_fold)
     best_log = gs_log.best_estimator_
 
-    # Naive Bayes
+    # GridSearchCV for MultinomialNB
     gs_nb = GridSearchCV(
-        estimator=naive_bayes_pipeline,
-        param_grid=naive_bayes_param_grid,
-        cv=inner_cv,
+        estimator=nb_pipe,
+        param_grid=nb_param_grid,
+        cv=k_base_models,
         scoring="f1_macro",
-        n_jobs=-1,
         verbose=2,
+        n_jobs=-1,
     )
+
     gs_nb.fit(X_train_fold, y_train_fold)
     best_nb = gs_nb.best_estimator_
 
-    # build and train meta classifier
-    meta_classifier = VotingClassifier(
-        estimators=[
-            ("svc", best_svc),
-            ("naive_bayes", best_nb),
-            ("logistic", best_log),
-        ],
-        voting="soft",
+    # GridSearchCV for RandomForest
+    gs_rf = GridSearchCV(
+        estimator=rf_pipe,
+        param_grid=rf_param_grid,
+        cv=k_base_models,
+        scoring="f1_macro",
+        verbose=2,
         n_jobs=-1,
     )
-    meta_classifier.fit(X_train_fold, y_train_fold)
 
-    # Predictions
-    y_pred = meta_classifier.predict(X_val_fold)
+    gs_rf.fit(X_train_fold, y_train_fold)
+    best_rf = gs_rf.best_estimator_
 
-    # macro average
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_val_fold, y_pred, average="macro", zero_division=0
+    # =============== BASE MODEL EVALUATION (IN OUTER FOLD LOOP) =============== #
+    for name, model in [
+        ("svc", best_svc),
+        ("log", best_log),
+        ("nb", best_nb),
+        ("rf", best_rf),
+    ]:
+        y_pred_base = model.predict(X_val_fold)
+        p_bm, r_bm, f_bm, _ = precision_recall_fscore_support(
+            y_val_fold, y_pred_base, average="macro", zero_division=0
+        )
+
+        # Save results
+        metrics_base_models[name]["precision"].append(p_bm)
+        metrics_base_models[name]["recall"].append(r_bm)
+        metrics_base_models[name]["f1"].append(f_bm)
+
+        print(f"Macro values for {name}:")
+        print(f"Precision: {p_bm:.4f}")
+        print(f"Recall: {r_bm:.4f}")
+        print(f"F1 Score: {f_bm:.4f}")
+        print(f"=" * 50)
+
+    # =============== VOTING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
+    base_models_vc = [
+        ("svc", best_svc),
+        ("log", best_log),
+        ("naive_bayes", best_nb),
+        ("rf", best_rf),
+    ]
+
+    # Define VotingClassifier
+    voting_clf = VotingClassifier(
+        estimators=base_models_vc, voting="soft", weights=[1, 1, 1, 1], n_jobs=-1
     )
 
-    # save results
-    fold_metrics["precision"].append(precision)
-    fold_metrics["recall"].append(recall)
-    fold_metrics["f1"].append(f1)
+    # Train VotingClassifier on (resampled) train split for this fold
+    voting_clf.fit(X_train_fold, y_train_fold)
 
-    print(f"\nFold {fold + 1} Results:")
-    print(f"  Precision (macro): {precision:.4f}")
-    print(f"  Recall (macro):    {recall:.4f}")
-    print(f"  F1-Score (macro):  {f1:.4f}")
+    # Predict and evaluate on validation fold
+    y_pred_vc = voting_clf.predict(X_val_fold)
+    p_vc, r_vc, f_vc, _ = precision_recall_fscore_support(
+        y_val_fold, y_pred_vc, average="macro", zero_division=0
+    )
 
-    # serialize predictions
-    with open(model_folder + f"predictions_fold_{fold + 1}.txt", "w") as f:
-        for pred in zip(X_val_fold, y_pred):
-            f.write(f"{pred}\n")
-        f.write("\n" + f"{precision:.4f}")
-        f.write("\n" + f"{recall:.4f}")
-        f.write("\n" + f"{f1:.4f}")
+    # Save results for this fold
+    metrics_voting["precision"].append(p_vc)
+    metrics_voting["recall"].append(r_vc)
+    metrics_voting["f1"].append(f_vc)
 
-# ------------------ final averaged results ------------------
-print("--------------- final results ---------------")
-print(f"{'='*50}")
+    print(f"VotingClassifier macro results for fold {fold+1}:")
+    print(f"Precision: {p_vc:.4f}")
+    print(f"Recall: {r_vc:.4f}")
+    print(f"F1 Score: {f_vc:.4f}")
+    print(f"=" * 50)
+
+    # =============== STACKING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
+    base_models_sc = [
+        ("svc", best_svc),
+        ("log", best_log),
+        ("nb", best_nb),
+        ("rf", best_rf),
+    ]
+
+    # Define StackingClassifier
+    stacking_clf = StackingClassifier(
+        estimators=base_models_sc,
+        final_estimator=LogisticRegression(max_iter=1000),
+        stack_method="predict_proba",
+        passthrough=False,
+        n_jobs=-1,
+        verbose=0,
+    )
+
+    # Train StackingClassifier on (resampled) train split for this fold
+    stacking_clf.fit(X_train_fold, y_train_fold)
+
+    # Predict and evaluate on validation fold
+    y_pred_sc = stacking_clf.predict(X_val_fold)
+    p_sc, r_sc, f_sc, _ = precision_recall_fscore_support(
+        y_val_fold, y_pred_sc, average="macro", zero_division=0
+    )
+
+    # Save results for this fold
+    metrics_stacking["precision"].append(p_sc)
+    metrics_stacking["recall"].append(r_sc)
+    metrics_stacking["f1"].append(f_sc)
+
+    print(f"StackingClassifier macro results for fold {fold+1}:")
+    print(f"Precision: {p_sc:.4f}")
+    print(f"Recall: {r_sc:.4f}")
+    print(f"F1 Score: {f_sc:.4f}")
+    print("=" * 50)
+
+
+# =============== FINAL AVERAGED RESULTS =============== #
+print("=============== FINAL RESULTS ===============")
+
+# VotingClassifier macro results
+print(f"VotingClassifier macro values:")
 print(
-    f"Average Precision (macro): {np.mean(fold_metrics['precision']):.4f} (+/- {np.std(fold_metrics['precision']):.4f})"
+    f"    Average precision: {np.mean(metrics_voting["precision"]):.4f} (+/- {np.std(metrics_voting["precision"]):.4f})"
 )
 print(
-    f"Average Recall (macro):    {np.mean(fold_metrics['recall']):.4f} (+/- {np.std(fold_metrics['recall']):.4f})"
+    f"    Average recall: {np.mean(metrics_voting["recall"]):.4f} (+/- {np.std(metrics_voting["recall"]):.4f})"
 )
 print(
-    f"Average F1-Score (macro):  {np.mean(fold_metrics['f1']):.4f} (+/- {np.std(fold_metrics['f1']):.4f})"
+    f"    Average f1 score: {np.mean(metrics_voting["f1"]):.4f} (+/- {np.std(metrics_voting["f1"]):.4f})"
 )
+print(f"-----")
 
-print("\nPer-Fold Results:")
-for i in range(5):
+# VotingClassifier fold results
+print(f"Results per fold:")
+
+for i in range(len(metrics_voting["precision"])):
     print(
-        f"Fold {i+1}: P={fold_metrics['precision'][i]:.4f}, R={fold_metrics['recall'][i]:.4f}, F1={fold_metrics['f1'][i]:.4f}"
+        f"Fold {i+1}: P={metrics_voting["precision"][i]:.4f}, R={metrics_voting["recall"][i]:.4f}, F1={metrics_voting["f1"][i]:.4f}"
     )
 
+print()
+print(f"=" * 30)
+print()
 
-"""# ------------------ Training ------------------
+# StackingClassifier macro results
+print(f"StackingClassifier macro values:")
+print(
+    f"    Average precision: {np.mean(metrics_stacking['precision']):.4f} (+/- {np.std(metrics_stacking['precision']):.4f})"
+)
+print(
+    f"    Average recall: {np.mean(metrics_stacking['recall']):.4f} (+/- {np.std(metrics_stacking['recall']):.4f})"
+)
+print(
+    f"    Average f1 score: {np.mean(metrics_stacking['f1']):.4f} (+/- {np.std(metrics_stacking['f1']):.4f})"
+)
+print(f"-----")
 
-print("Training model...")
-grid_search.fit(X_train, y_train)  # Training the model
+# StackingClassifier fold results
+print(f"Results per fold:")
 
-# ------------------ Save Model ------------------
+for i in range(len(metrics_stacking["precision"])):
+    print(
+        f"Fold {i+1}: P={metrics_stacking['precision'][i]:.4f}, R={metrics_stacking['recall'][i]:.4f}, F1={metrics_stacking['f1'][i]:.4f}"
+    )
 
-best_model = (
-    grid_search.best_estimator_
-)  # Stores the model with the best parameters found by GridSearch
-filename = (
-    model_folder + "model.joblib"
-)  # Filename for saving, given as second run argument
-
-joblib.dump(best_model, filename)  # Serialize and save the model
-
-print("Evaluating model...")
-evaluation = None
-# y_pred = best_model.predict(X_test)
-# ---------------- serialize Evaluation Results ----------------
-with open(model_folder + "evaluation.txt", "w") as f:
-    f.write(str(evaluation))
-
-print("All data saved to your model folder!")"""
-
-# ------------------ Entry Point ------------------1
-
-if __name__ == "__main__":
-    pass
+# Base models average results
