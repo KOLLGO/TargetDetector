@@ -305,42 +305,6 @@ def get_train_matrix(X_train: pd.DataFrame, X_train_tfidf, vec_path: str):
     return X_train
 
 
-def get_test_matrix(csv_path: str, vec_path: str):
-    """
-    in: csv path,vectorizer save path
-    out: sparse feature matrix
-    """
-    # load and preprocess data
-    X_test: pd.DataFrame = data_handling(csv_path)
-    texts = X_test["description_clean"].values
-
-    # build feature df from texts
-    df_features = pd.DataFrame({"id": range(len(texts)), "description": texts})
-    df_features = feature_extraction_pipeline(df_features)
-
-    # load saved feature column order and vectorizer
-    feature_names_path = vec_path + "feature_names.pkl"
-    vectorizer_path = vec_path + "tfidf_vectorizer.pkl"
-    feature_names = joblib.load(feature_names_path)
-    vectorizer = joblib.load(vectorizer_path)
-
-    # remove 'id' and reindex df_features to match training columns
-    feature_cols = [c for c in feature_names if c != "id"]
-    df_features = df_features.reindex(
-        columns=["id"] + feature_cols, fill_value=0
-    )  # fill missing with 0
-
-    # convert df features to sparse matrix without id
-    mat_features_all = csr_matrix(df_features.drop(columns=["id"]).values)
-
-    # build TF-IDF matrix using saved vectorizer
-    tfidf_mat = vectorizer.transform(texts)
-
-    # combine features (feature columns first, then TF-IDF columns)
-    X_test = hstack([mat_features_all, tfidf_mat])
-    return X_test
-
-
 if __name__ == "__main__":
     X_train, y_train = get_model_matrices("../tar.csv", "./model")
     print(X_train)
