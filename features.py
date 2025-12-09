@@ -23,7 +23,7 @@ def extract_pronouns(df: pd.DataFrame, pronouns_list: list[str]):
     # loop through rows
     for idx, row in df.iterrows():
         id = row["id"]  # get id
-        text = row["description"]  # get description
+        text = row["description_clean"]  # get description
 
         # loop through pronouns
         for pronoun in pronouns_list:
@@ -50,7 +50,7 @@ def extract_generics(df: pd.DataFrame, generics_list: list[str]):
     # loop through rows
     for idx, row in df.iterrows():
         id = row["id"]  # get id
-        text = row["description"]  # get description
+        text = row["description_clean"]  # get description
 
         # loop through generics
         for generic in generics_list:
@@ -79,7 +79,7 @@ def extract_mentions(df: pd.DataFrame):
     # loop through rows
     for idx, row in df.iterrows():
         id = row["id"]  # get id
-        text = row["description"]  # get description
+        text = row["description_clean"]  # get description
 
         # loop through mentions
         for mention in mentions_list:
@@ -114,7 +114,7 @@ def extract_word_n_grams(df: pd.DataFrame, words_of_interest: list[str]):
 
     for idx, row in df.iterrows():
         text = row.get(
-            "description_clean", row.get("description", "")
+            "description_clean"  # , row.get("description_clean", "")
         )  # get cleaned text
         tokens = str(text).strip().split()  # tokenize by words
 
@@ -247,7 +247,6 @@ def feature_extraction_pipeline(df):
     ]  # list of generics
 
     words_of_interest = pronouns_list + generics_list
-
     # get all feature dfs
     df_pronouns = extract_pronouns(df, pronouns_list)
     df_generics = extract_generics(df, generics_list)
@@ -284,25 +283,6 @@ def get_model_matrices(csv_path: str, vec_path: str):
     mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
     X_train: csr_matrix = hstack([mat_features_train, X_train_tfidf])
     return X_train, y_train
-
-
-def get_train_matrix(X_train: pd.DataFrame, X_train_tfidf, vec_path: str):
-    """
-    in: train df, train tfidf matrix, vectorizer save path
-    out: X_train
-    """
-    # convert feature Series to DFs (Foreign Code, by GitHub Copilot)
-    df_train = pd.DataFrame({"id": range(len(X_train)), "description": X_train.values})
-    # feature extraction pipeline for train data
-    df_features_train = feature_extraction_pipeline(df_train)
-    feature_names = list(df_features_train.columns)  # save feature column names
-    joblib.dump(
-        feature_names, vec_path + "feature_names.pkl"
-    )  # Serialize feature column names
-    # convert and combine features and tfidf to sparse matrix
-    mat_features_train = csr_matrix(df_features_train.drop(columns=["id"]).values)
-    X_train = hstack([mat_features_train, X_train_tfidf])
-    return X_train
 
 
 if __name__ == "__main__":

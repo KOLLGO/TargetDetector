@@ -125,6 +125,9 @@ def data_handling(file: str):
                 umlaut, replacement
             )  # replace umlaut with replacement
 
+        description = re.sub(r",(?=\S)", ", ", description)  # space after commas
+        description = re.sub(r"\.(?=\S)", ". ", description)  # space after dot
+
         description = re.sub(
             r"[^a-z\s@]", "", description
         )  # remove non-alphanumeric characters except spaces
