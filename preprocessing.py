@@ -8,9 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-"""
-with if-statement to avoid errors if model is not present ???
-"""
+# load spacy german language model
 try:
     nlp = spacy.load("de_core_news_lg")  # loads german language model
 except OSError:
@@ -29,14 +27,14 @@ def data_handling(file: str):
 
     # data input: csv -> df
     df_data: pd.DataFrame = pd.read_csv(file, sep=";")
-    df_data = df_data.head(1000)  # optional limit for faster testing
+    # df_data = df_data.head(100)  # optional limit for faster testing
 
     # convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()
 
     # whitelist of pronouns to keep
     whitelist: set[str] = {
-        "ich",
+        # "ich",
         "du",
         "er",
         "sie",
@@ -48,16 +46,9 @@ def data_handling(file: str):
         "ihn",
         "uns",
         "euch",
-        "mir",
         "dir",
         "ihm",
         "ihnen",
-        "mein",
-        "meine",
-        "meiner",
-        "meines",
-        "meinem",
-        "meinen",
         "dein",
         "deine",
         "deiner",
@@ -151,34 +142,6 @@ def data_handling(file: str):
     )
 
     return df_data
-
-
-# ======== Data Split (obsolete) ======== #
-"""def split_data(df):
-    \"""
-    in: dataframe (cleaned)
-    out: X_train -> train features
-         X_test -> test features
-         y_train -> train labels
-         y_test -> test labels
-    \"""
-
-    X = df["description_clean"]  # features
-    y = df["TAR"]  # labels
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,  # test data size: 20 %
-        random_state=42,  # seed for reproducibility
-        stratify=y,  # ensures balanced class distribution in train/test split
-    )
-
-    print(f"Training set size: {len(X_train)} ({len(X_train)/len(X)*100:.1f}%)")
-    print(f"Test set size: {len(X_test)} ({len(X_test)/len(X)*100:.1f}%)")
-
-    return X_train, X_test, y_train, y_test
-"""
 
 
 # ======== Oversampling (obsolete) ======== #
@@ -275,6 +238,6 @@ def get_processed_dfs(csv_path: str, vec_path: str):
 
 # ======= Test ======== #
 if __name__ == "__main__":
-    df_test, X_train_tfidf = get_processed_dfs("../tar.csv", "./")
+    df_test, X_train_tfidf = get_processed_dfs("../tar.csv", "./model")
     print(df_test.head())
     print(X_train_tfidf)

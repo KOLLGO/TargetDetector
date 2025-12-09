@@ -9,8 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.metrics import precision_recall_fscore_support
-from imblearn.over_sampling import RandomOverSampler
-from scipy.sparse import save_npz, load_npz
+from scipy.sparse import save_npz
 
 # GridSearch, K-Fold CV
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
@@ -27,9 +26,6 @@ from sklearn.ensemble import VotingClassifier, StackingClassifier
 # Pipelining
 from imblearn.pipeline import Pipeline
 
-# Serialization
-import joblib
-
 # Own functions
 from features import get_model_matrices
 
@@ -37,6 +33,8 @@ from features import get_model_matrices
 # =============== DATA PREPARATION =============== #
 csv_path = sys.argv[1]
 model_folder = sys.argv[2]
+
+CORES = -1  # Use all available CPU cores
 
 if not model_folder.endswith("/"):
     model_folder += "/"
@@ -101,9 +99,9 @@ rf_param_grid = {
 seed = 42  # Oversampling seed
 
 strategy = {
-    0: largest_count,  # * 0.4,  # group
-    1: largest_count,  # * 0.6,  # individual
-    2: largest_count,  # public
+    "group": int(largest_count * 0.4),  # group
+    "individual": int(largest_count * 0.6),  # individual
+    "public": int(largest_count),  # public
 }
 
 # =============== PIPELINE CREATION =============== #
@@ -112,7 +110,6 @@ strategy = {
 svc_pipe = Pipeline(
     [
         ("scaler", MaxAbsScaler()),
-        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
         ("svc", SVC(kernel="rbf", probability=True)),
     ]
 )
@@ -121,7 +118,6 @@ svc_pipe = Pipeline(
 log_pipe = Pipeline(
     [
         ("scaler", MaxAbsScaler()),
-        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
         ("log", LogisticRegression(max_iter=10000)),
     ]
 )
@@ -129,7 +125,6 @@ log_pipe = Pipeline(
 # MultinomialNB
 nb_pipe = Pipeline(
     [
-        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
         ("nb", MultinomialNB()),
     ]
 )
@@ -137,8 +132,6 @@ nb_pipe = Pipeline(
 # RandomForest
 rf_pipe = Pipeline(
     [
-        # ("scaler", MaxAbsScaler()),  # not useful
-        # ("ros", RandomOverSampler(sampling_strategy=strategy, random_state=seed)),
         ("rf", RandomForestClassifier()),
     ]
 )
@@ -182,52 +175,6 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
     y_train_fold = y_train[train_idx]
     y_val_fold = y_train[val_idx]
 
-    # Save fold data as sparse NPZ (memory-efficient)
-    # Ensure X_train_fold and X_val_fold are sparse CSR matrices
-    from scipy.sparse import csr_matrix
-
-    if not hasattr(X_train_fold, "tocsr"):
-        # convert to sparse if dense
-        X_train_fold = csr_matrix(X_train_fold)
-        X_val_fold = csr_matrix(X_val_fold)
-    else:
-        X_train_fold = X_train_fold.tocsr()
-        X_val_fold = X_val_fold.tocsr()
-
-    # Save sparse feature matrices as NPZ (compressed)
-    save_npz(model_folder + f"fold_{fold+1}_X_train.npz", X_train_fold)
-    save_npz(model_folder + f"fold_{fold+1}_X_val.npz", X_val_fold)
-
-    # Save labels and indices as numpy compressed format
-    np.savez_compressed(
-        model_folder + f"fold_{fold+1}_y_and_idx.npz",
-        y_train=np.asarray(y_train_fold).ravel(),
-        y_val=np.asarray(y_val_fold).ravel(),
-        train_idx=train_idx,
-        val_idx=val_idx,
-    )
-
-    print(f"Saved fold {fold+1} train/val data (sparse NPZ format)")
-    results_file.write(f"Saved fold {fold+1} train/val data (sparse NPZ format)\n")
-
-    # Estimate and log saved space (optional)
-    try:
-        x_train_size_mb = (
-            os.path.getsize(model_folder + f"fold_{fold+1}_X_train.npz") / 1024 / 1024
-        )
-        x_val_size_mb = (
-            os.path.getsize(model_folder + f"fold_{fold+1}_X_val.npz") / 1024 / 1024
-        )
-        y_idx_size_mb = (
-            os.path.getsize(model_folder + f"fold_{fold+1}_y_and_idx.npz") / 1024 / 1024
-        )
-        total_mb = x_train_size_mb + x_val_size_mb + y_idx_size_mb
-        msg = f"  Fold {fold+1} storage: {total_mb:.2f} MB (X_train: {x_train_size_mb:.2f} MB, X_val: {x_val_size_mb:.2f} MB, y+idx: {y_idx_size_mb:.2f} MB)\n"
-        print(msg, end="")
-        results_file.write(msg)
-    except Exception:
-        pass
-
     # GridSearchCV for SVC
     gs_svc = GridSearchCV(
         estimator=svc_pipe,
@@ -235,7 +182,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=7,
+        n_jobs=CORES,
     )
 
     gs_svc.fit(X_train_fold, y_train_fold)
@@ -248,7 +195,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=7,
+        n_jobs=CORES,
     )
 
     gs_log.fit(X_train_fold, y_train_fold)
@@ -261,7 +208,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=7,
+        n_jobs=CORES,
     )
 
     gs_nb.fit(X_train_fold, y_train_fold)
@@ -274,7 +221,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         cv=k_base_models,
         scoring="f1_macro",
         verbose=2,
-        n_jobs=7,
+        n_jobs=CORES,
     )
 
     gs_rf.fit(X_train_fold, y_train_fold)
@@ -306,6 +253,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         results_file.write(msg)
 
     # =============== VOTING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
+    """
     base_models_vc = [
         ("svc", best_svc),
         ("log", best_log),
@@ -315,7 +263,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
 
     # Define VotingClassifier
     voting_clf = VotingClassifier(
-        estimators=base_models_vc, voting="soft", weights=[1, 1, 1, 1], n_jobs=7
+        estimators=base_models_vc, voting="soft", weights=[1, 1, 1, 1], n_jobs=CORES
     )
 
     # Train VotingClassifier on (resampled) train split for this fold
@@ -340,6 +288,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
 
     print(msg, end="")
     results_file.write(msg)
+    """
 
     # =============== STACKING CLASSIFIER AS META CLASSIFIER (IN OUTER FOLD LOOP) =============== #
     base_models_sc = [
@@ -355,7 +304,7 @@ for fold, (train_idx, val_idx) in enumerate(k_meta_classifier.split(X_train, y_t
         final_estimator=LogisticRegression(max_iter=1000),
         stack_method="predict_proba",
         passthrough=False,
-        n_jobs=7,
+        n_jobs=CORES,
         verbose=0,
     )
 
@@ -388,33 +337,21 @@ print("=============== FINAL RESULTS ===============")
 results_file.write("=============== FINAL RESULTS ===============\n")
 
 # VotingClassifier macro results
+"""
 msg = f"VotingClassifier macro values:\n"
 msg += f"    Average precision: {np.mean(metrics_voting['precision']):.4f} (+/- {np.std(metrics_voting['precision']):.4f})\n"
 msg += f"    Average recall: {np.mean(metrics_voting['recall']):.4f} (+/- {np.std(metrics_voting['recall']):.4f})\n"
 msg += f"    Average f1 score: {np.mean(metrics_voting['f1']):.4f} (+/- {np.std(metrics_voting['f1']):.4f})\n"
-msg += f"-----\n"
-msg += f"Results per fold:\n"
-
-for i in range(len(metrics_voting["precision"])):
-    msg += f"Fold {i+1}: P={metrics_voting['precision'][i]:.4f}, R={metrics_voting['recall'][i]:.4f}, F1={metrics_voting['f1'][i]:.4f}\n"
-
-msg += "\n" + "=" * 30 + "\n\n"
 
 print(msg, end="")
 results_file.write(msg)
+"""
 
 # StackingClassifier macro results
 msg = f"StackingClassifier macro values:\n"
 msg += f"    Average precision: {np.mean(metrics_stacking['precision']):.4f} (+/- {np.std(metrics_stacking['precision']):.4f})\n"
 msg += f"    Average recall: {np.mean(metrics_stacking['recall']):.4f} (+/- {np.std(metrics_stacking['recall']):.4f})\n"
 msg += f"    Average f1 score: {np.mean(metrics_stacking['f1']):.4f} (+/- {np.std(metrics_stacking['f1']):.4f})\n"
-msg += f"-----\n"
-msg += f"Results per fold:\n"
-
-for i in range(len(metrics_stacking["precision"])):
-    msg += f"Fold {i+1}: P={metrics_stacking['precision'][i]:.4f}, R={metrics_stacking['recall'][i]:.4f}, F1={metrics_stacking['f1'][i]:.4f}\n"
-
-msg += "\n"
 
 print(msg, end="")
 results_file.write(msg)

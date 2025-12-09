@@ -176,28 +176,19 @@ def feature_extraction_pipeline(df):
     out: df with all features
     """
     pronouns_list = [
-        "ich",
         "du",
         "er",
         "sie",
         "es",
         "wir",
         "ihr",
-        "mich",
         "dich",
         "ihn",
         "uns",
         "euch",
-        "mir",
         "dir",
         "ihm",
         "ihnen",
-        "mein",
-        "meine",
-        "meiner",
-        "meines",
-        "meinem",
-        "meinen",
         "dein",
         "deine",
         "deiner",
@@ -351,6 +342,6 @@ def get_test_matrix(csv_path: str, vec_path: str):
 
 
 if __name__ == "__main__":
-    X_train, y_train = get_model_matrices("../tar.csv", "./")
+    X_train, y_train = get_model_matrices("../tar.csv", "./model")
     print(X_train)
     print(y_train)
