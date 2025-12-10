@@ -1,14 +1,14 @@
-# ======== Preprocessing ======== #
+# ------------ Imports ------------
+# Serializaton
 import joblib
+
+# Data processing
 import pandas as pd
 import spacy
 import re
-from scipy.sparse import csr_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.utils import resample
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# load spacy german language model
+# ------------ Load Spacy Model ------------
 try:
     nlp = spacy.load("de_core_news_lg")  # loads german language model
 except OSError:
@@ -18,18 +18,18 @@ except OSError:
     nlp = spacy.load("de_core_news_lg")
 
 
-# ======== Preprocessing Pipeline ======== #
+# ------------ Preprocessing Pipeline ------------
 def data_handling(file: str):
     """
     in: csv file path
     out: cleaned dataframe
     """
 
-    # data input: csv -> df
+    # open csv file
     df_data: pd.DataFrame = pd.read_csv(file, sep=";")
     # df_data = df_data.head(100)  # optional limit for faster testing
 
-    # convert to lowercase
+    # new column for cleaned description + convert to lowercase
     df_data["description_clean"] = df_data["description"].str.lower()
 
     # whitelist of pronouns to keep
@@ -92,7 +92,7 @@ def data_handling(file: str):
             token.text
             for token in doc  # for every token in doc
             if not token.is_stop
-            or token.text in whitelist  # remove stopwords and keeps words in whitelist
+            or token.text in whitelist  # keep token only if its not a stopword or is whitelisted
         ]
         return " ".join(cleaned_tokens)  # joins tokens back to string
 
@@ -102,7 +102,7 @@ def data_handling(file: str):
         in: description text
         out: description text without hyperlinks
         """
-        return re.sub(r"http[s]?://\S+", "", description)
+        return re.sub(r"http[s]?://\S+", "", description) # regex for link structure, sub with empty string
 
     # function to remove special characters
     def remove_special_chars(description: str):
@@ -146,17 +146,17 @@ def data_handling(file: str):
     return df_data
 
 
-# ======= TF-IDF feature engineering ======== #
+# ------------ TF-IDF Feature Engineering ------------
 def tfidf_vectorizer(df: pd.DataFrame, filepath: str):
     """
-    in: df -> cleaned DataFrame
-        filepath -> path to save the vectorizer
-    out: X_train_tfidf -> TF-IDF transformed train features (sparse matrix)
+    in: df - cleaned DataFrame
+        filepath - path to save the vectorizer
+    out: X_train_tfidf - TF-IDF transformed train features (sparse matrix)
     """
 
     vectorizer: TfidfVectorizer = TfidfVectorizer(
         max_features=10000,  # limit feature space dimensionality
-        min_df=1,  # mininmal document frequency for a token to be included (avoids overfitting)
+        min_df=1,  # mininmal document frequency for a token to be included (could be increased to avoid overfitting)
         sublinear_tf=True,  # logarithmic scaling for better for better weighting
         norm="l2",  # L2 normalization
         stop_words=None,  # doesnt exlude more stopwords
@@ -170,22 +170,22 @@ def tfidf_vectorizer(df: pd.DataFrame, filepath: str):
 
     joblib.dump(
         vectorizer, filepath + "tfidf_vectorizer.pkl"
-    )  # optional: save vectorizer
+    )  # serialize vectorizer
     return X_train_tfidf
 
 
-# ======= Data for feature extraction ======== #
+# ------------ Data to import for features ------------
 def get_processed_dfs(csv_path: str, vec_path: str):
     """
     in: csv file path, vectorizer save path
-    out: df with preprocessed data, vectorized training dataset
+    out: df with preprocessed data, vectorized dataset (tf-idf sparse matrix)
     """
     df_preprocessed: pd.DataFrame = data_handling(csv_path)
     X_train_tfidf = tfidf_vectorizer(df_preprocessed, vec_path)
     return (df_preprocessed, X_train_tfidf)
 
 
-# ======= Test ======== #
+# ------------ Test ------------
 if __name__ == "__main__":
     df_test, X_train_tfidf = get_processed_dfs("../tar.csv", "./model")
     print(df_test.head())
