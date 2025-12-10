@@ -1,6 +1,7 @@
 # =============== IMPORTS =============== #
 
 # General
+import argparse
 import os
 import sys
 
@@ -31,10 +32,45 @@ from features import get_model_matrices
 
 
 # =============== DATA PREPARATION =============== #
-csv_path = sys.argv[1]
-model_folder = sys.argv[2]
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-i", "--input", type=str, help="Path to the CSV data file", required=True
+)
+parser.add_argument(
+    "-m",
+    "--model",
+    type=str,
+    help="Folder to save the model components and results",
+    required=True,
+)
+parser.add_argument(
+    "-s",
+    "--seed",
+    type=int,
+    help="Seed for reproducibibility (default: None for random seed)",
+    required=False,
+    default=None,
+)
+parser.add_argument(
+    "-c",
+    "--cores",
+    type=int,
+    help="Number of CPU cores to use (default: -1 for all available cores)",
+    required=False,
+    default=-1,
+)
 
-CORES = -1  # Use all available CPU cores
+args = parser.parse_args()
+
+csv_path = args.input
+model_folder = args.model
+seed = args.seed
+CORES = args.cores
+
+print(seed)
+print(CORES)
+print(model_folder)
+print(csv_path)
 
 if not model_folder.endswith("/"):
     model_folder += "/"
@@ -96,7 +132,6 @@ rf_param_grid = {
 
 
 # =============== OVERSAMPLING STRATEGY =============== #
-seed = 42  # Oversampling seed
 
 strategy = {
     "group": int(largest_count * 0.4),  # group

@@ -38,20 +38,30 @@ pip install -r requirements.txt
 - Modell trainieren
   
   ```bash
-  python main.py <path_to_csv>.csv <path_to_model_folder> <seed>
+  python main.py -h
+  ```
+  ```bash
+  usage: main.py [-h] -i INPUT -m MODEL [-s SEED] [-c CORES]
+
+  options:
+    -h, --help         show this help message and exit
+    -i, --input INPUT  Path to the CSV data file
+    -m, --model MODEL  Folder to save the model components and results
+    -s, --seed SEED    Seed for reproducibibility (default: None for random seed)
+    -c, --cores CORES  Number of CPU cores to use (default: -1 for all available cores)
   ```
   
-  - initialisiert den Zufallsgenerator mit `<seed>` für Reproduzierbarkeit der Ergebnisse
+  - initialisiert den Zufallsgenerator mit `<SEED>` für Reproduzierbarkeit der Ergebnisse
   
-  - falls kein Seed angegeben wird, erfolgt Initialisierung zufällig (`-1`)
+  - falls kein Seed angegeben wird, erfolgt Initialisierung zufällig (`None`)
   
-  - nutzt die `<path_to_csv>.csv` zum Trainieren des Modells (Separator ist `;`, kann in [preprocessing.py](https://github.com/KOLLGO/TargetDetector/blob/0bda2151fd0eb0ffeaa5cd800153949593e59257/preprocessing.py) `data_handling()` angepasst werden)
+  - nutzt die `<INPUT>.csv` zum Trainieren des Modells (Separator ist `;`, kann in [preprocessing.py](https://github.com/KOLLGO/TargetDetector/blob/0bda2151fd0eb0ffeaa5cd800153949593e59257/preprocessing.py) `data_handling()` angepasst werden)
   
-  - speichert den Vectorizer unter `<path_to_model_folder>/tfidf_vectorizer.pkl`
+  - speichert den Vectorizer unter `<MODEL>/tfidf_vectorizer.pkl`
   
-  - speichert die Feature-Struktur unter `<path_to_model_folder>/feature_names.pkl`
+  - speichert die Feature-Struktur unter `<MODEL>/feature_names.pkl`
   
-  - evaluiert das Modell und speichert die Ergebnisse unter `<path_to_model_folder>/training_results.txt`
+  - evaluiert das Modell und speichert die Ergebnisse unter `<MODEL>/training_results.txt`
 
 - Das Modell zu speichern, um es dann einzusetzen wäre im Sinne einer Shared Task, entfällt aber aufgrund der Aufgabenstellung.
 

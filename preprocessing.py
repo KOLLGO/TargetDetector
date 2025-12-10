@@ -34,7 +34,6 @@ def data_handling(file: str):
 
     # whitelist of pronouns to keep
     whitelist: set[str] = {
-        # "ich",
         "du",
         "er",
         "sie",
@@ -145,59 +144,6 @@ def data_handling(file: str):
     )
 
     return df_data
-
-
-# ======== Oversampling (obsolete) ======== #
-def random_oversampling(X_train: csr_matrix, y_train: csr_matrix):
-    """
-    in: X_train -> training features
-        y_train -> training labels
-    out: X_resampled -> oversampled training features
-         y_resampled -> oversampled training labels
-    """
-    train_data = pd.DataFrame(
-        {"description_clean": X_train, "TAR": y_train}
-    )  # combining X and y into df
-
-    max_class = train_data["TAR"].value_counts().idxmax()  # find majority class
-    max_class_size = train_data["TAR"].value_counts().max()  # size of majority class
-    print(f"Majority class: {max_class}")
-    print(f"Majority class size: {max_class_size}")
-
-    lst = []  # list to hold resampled dataframes
-
-    # for every class
-    for class_index, group in train_data.groupby("TAR"):
-        if class_index == max_class:
-            lst.append(group)  # keep majority class as is
-            continue
-        # oversample minority classes
-        group_resampled = resample(
-            group,
-            replace=True,  # sample with replacement
-            n_samples=max_class_size,  # to match majority class size
-            random_state=42,  # seed for reproducibility
-        )
-        lst.append(group_resampled)
-
-    train_data_resampled = pd.concat(lst)  # concatenate all resampled dataframes
-
-    train_data_resampled = train_data_resampled.sample(
-        frac=1, random_state=42
-    ).reset_index(
-        drop=True
-    )  # shuffle dataframe (better for training)
-
-    # split back into X (data) and y (labels)
-    X_train_resampled = train_data_resampled["description_clean"]
-    y_train_resampled = train_data_resampled["TAR"]
-
-    print("\nClass distribution before oversampling:")
-    print(y_train.value_counts())
-    print("\nClass distribution after oversampling:")
-    print(y_train_resampled.value_counts())
-
-    return X_train_resampled, y_train_resampled
 
 
 # ======= TF-IDF feature engineering ======== #
