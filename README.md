@@ -70,94 +70,33 @@ Der beste Test des Modells wies folgende Werte auf:
 | Inner k (für k-Fold-CV) | 3 |  |
 | Outer k (für k-Fold-CV) | 5 |  |
 | ———————— | Ergebnisse | ——————————————— |
-| Fold 1 | SVC | Precision: 0.6636
-Recall: 0.6635
-F1 Score: 0.6615 |
-|  | Logistische Regression | Precision: 0.6879
-Recall: 0.6743
-F1 Score: 0.6785 |
-|  | Naive Bayes | Precision: 0.7130
-Recall: 0.6247
-F1 Score: 0.6523 |
-|  | Random Forest | Precision: 0.6951
-Recall: 0.6567
-F1 Score: 0.6727 |
-|  | Stacking CLF | Precision: 0.7450
-Recall: 0.6512
-F1 Score: 0.6810 |
-| Fold 2 | SVC | Precision: 0.6523
-Recall: 0.6523
-F1 Score: 0.6480 |
-|  | Logistische Regression | Precision: 0.6656
-Recall: 0.6498
-F1 Score: 0.6553 |
-|  | Naive Bayes | Precision: 0.6941
-Recall: 0.6131
-F1 Score: 0.6376 |
-|  | Random Forest | Precision: 0.6960
-Recall: 0.6480
-F1 Score: 0.6663 |
-|  | Stacking CLF | Precision: 0.7269
-Recall: 0.6313
-F1 Score: 0.6596 |
-| Fold 3 | SVC | Macro values for svc:
-Precision: 0.6453
-Recall: 0.6421
-F1 Score: 0.6389 |
-|  | Logistische Regression | Precision: 0.6749
-Recall: 0.6545
-F1 Score: 0.6625 |
-|  | Naive Bayes | Precision: 0.6998
-Recall: 0.6198
-F1 Score: 0.6448 |
-|  | Random Forest | Precision: 0.6911
-Recall: 0.6517
-F1 Score: 0.6673 |
-|  | Stacking CLF | Precision: 0.7337
-Recall: 0.6411
-F1 Score: 0.6699 |
-| Fold 4 | SVC | Precision: 0.6518
-Recall: 0.6549
-F1 Score: 0.6487 |
-|  | Logistische Regression | Precision: 0.6781
-Recall: 0.6582
-F1 Score: 0.6655 |
-|  | Naive Bayes | Precision: 0.6970
-Recall: 0.6110
-F1 Score: 0.6368 |
-|  | Random Forest | Precision: 0.6912
-Recall: 0.6424
-F1 Score: 0.6618 |
-|  | Stacking CLF | Precision: 0.7267
-Recall: 0.6387
-F1 Score: 0.6664 |
-| Fold 5 | SVC | Precision: 0.6584
-Recall: 0.6696
-F1 Score: 0.6581 |
-|  | Logistische Regression | Precision: 0.6763
-Recall: 0.6603
-F1 Score: 0.6657 |
-|  | Naive Bayes | Precision: 0.6960
-Recall: 0.6128
-F1 Score: 0.6383 |
-|  | Random Forest | Precision: 0.6891
-Recall: 0.6480
-F1 Score: 0.6642 |
-|  | Stacking CLF | Precision: 0.7332
-Recall: 0.6421
-F1 Score: 0.6699 |
-| Makro-AVG | SVC | Average precision: 0.6543 (+/- 0.0062)
-Average recall: 0.6565 (+/- 0.0095)
-Average f1 score: 0.6510 (+/- 0.0080) |
-|  | Logistische Regression | Average precision: 0.6765 (+/- 0.0071)
-Average recall: 0.6594 (+/- 0.0083)
-Average f1 score: 0.6655 (+/- 0.0075) |
-|  | Naive Bayes | Average precision: 0.7000 (+/- 0.0068)
-Average recall: 0.6163 (+/- 0.0052)
-Average f1 score: 0.6420 (+/- 0.0059) |
-|  | Random Forest | Average precision: 0.6925 (+/- 0.0026)
-Average recall: 0.6494 (+/- 0.0047)
-Average f1 score: 0.6665 (+/- 0.0037) |
-|  | Stacking CLF | Average precision: 0.7331 (+/- 0.0067)
-Average recall: 0.6409 (+/- 0.0064)
-Average f1 score: 0.6694 (+/- 0.0069) |
+| Fold 1 | SVC | Precision: 0.6636<br>Recall: 0.6635<br>F1 Score: 0.6615 |
+|  | Logistische Regression | Precision: 0.6879<br>Recall: 0.6743<br>F1 Score: 0.6785 |
+|  | Naive Bayes | Precision: 0.7130<br>Recall: 0.6247<br>F1 Score: 0.6523 |
+|  | Random Forest | Precision: 0.6951<br>Recall: 0.6567<br>F1 Score: 0.6727 |
+|  | Stacking CLF | Precision: 0.7450<br>Recall: 0.6512<br>F1 Score: 0.6810 |
+| Fold 2 | SVC | Precision: 0.6523<br>Recall: 0.6523<br>F1 Score: 0.6480 |
+|  | Logistische Regression | Precision: 0.6656<br>Recall: 0.6498<br>F1 Score: 0.6553 |
+|  | Naive Bayes | Precision: 0.6941<br>Recall: 0.6131<br>F1 Score: 0.6376 |
+|  | Random Forest | Precision: 0.6960<br>Recall: 0.6480<br>F1 Score: 0.6663 |
+|  | Stacking CLF | Precision: 0.7269<br>Recall: 0.6313<br>F1 Score: 0.6596 |
+| Fold 3 | SVC | Precision: 0.6453<br><br>Recall: 0.6421<br>F1 Score: 0.6389 |
+|  | Logistische Regression | Precision: 0.6749<br>Recall: 0.6545<br>F1 Score: 0.6625 |
+|  | Naive Bayes | Precision: 0.6998<br>Recall: 0.6198<br>F1 Score: 0.6448 |
+|  | Random Forest | Precision: 0.6911<br>Recall: 0.6517<br>F1 Score: 0.6673 |
+|  | Stacking CLF | Precision: 0.7337<br>Recall: 0.6411<br>F1 Score: 0.6699 |
+| Fold 4 | SVC | Precision: 0.6518<br>Recall: 0.6549<br>F1 Score: 0.6487 |
+|  | Logistische Regression | Precision: 0.6781<br>Recall: 0.6582<br>F1 Score: 0.6655 |
+|  | Naive Bayes | Precision: 0.6970<br>Recall: 0.6110<br>F1 Score: 0.6368 |
+|  | Random Forest | Precision: 0.6912<br>Recall: 0.6424<br>F1 Score: 0.6618 |
+|  | Stacking CLF | Precision: 0.7267<br>Recall: 0.6387<br>F1 Score: 0.6664 |
+| Fold 5 | SVC | Precision: 0.6584<br>Recall: 0.6696<br>F1 Score: 0.6581 |
+|  | Logistische Regression | Precision: 0.6763<br>Recall: 0.6603<br>F1 Score: 0.6657 |
+|  | Naive Bayes | Precision: 0.6960<br>Recall: 0.6128<br>F1 Score: 0.6383 |
+|  | Random Forest | Precision: 0.6891<br>Recall: 0.6480<br>F1 Score: 0.6642 |
+|  | Stacking CLF | Precision: 0.7332<br>Recall: 0.6421<br>F1 Score: 0.6699 |
+| Makro-AVG | SVC | Average precision: 0.6543 (+/- 0.0062)<br>Average recall: 0.6565 (+/- 0.0095)<br>Average f1 score: 0.6510 (+/- 0.0080) |
+|  | Logistische Regression | Average precision: 0.6765 (+/- 0.0071)<br>Average recall: 0.6594 (+/- 0.0083)<br>Average f1 score: 0.6655 (+/- 0.0075) |
+|  | Naive Bayes | Average precision: 0.7000 (+/- 0.0068)<br>Average recall: 0.6163 (+/- 0.0052)<br>Average f1 score: 0.6420 (+/- 0.0059) |
+|  | Random Forest | Average precision: 0.6925 (+/- 0.0026)<br>Average recall: 0.6494 (+/- 0.0047)<br>Average f1 score: 0.6665 (+/- 0.0037) |
+|  | Stacking CLF | Average precision: 0.7331 (+/- 0.0067)<br>Average recall: 0.6409 (+/- 0.0064)<br>Average f1 score: 0.6694 (+/- 0.0069) |
