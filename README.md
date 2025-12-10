@@ -59,8 +59,6 @@ pip install -r requirements.txt
   
   - speichert den Vectorizer unter `<MODEL>/tfidf_vectorizer.pkl`
   
-  - speichert die Feature-Struktur unter `<MODEL>/feature_names.pkl`
-  
   - evaluiert das Modell und speichert die Ergebnisse unter `<MODEL>/training_results.txt`
 
 - Das Modell zu speichern, um es dann einzusetzen wäre im Sinne einer Shared Task, entfällt aber aufgrund der Aufgabenstellung.
