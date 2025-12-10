@@ -40,7 +40,7 @@ pip install -r requirements.txt
   ```bash
   python main.py -h
   ```
-  ```bash
+  ```text
   usage: main.py [-h] -i INPUT -m MODEL [-s SEED] [-c CORES]
 
   options:
