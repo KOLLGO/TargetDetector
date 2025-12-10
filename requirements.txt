@@ -1,3 +1,7 @@
 pandas
 scipy
+scikit-learn
+spacy
+joblib
+imbalanced-learn
 imblearn
