@@ -38,7 +38,7 @@ pip install -r requirements.txt
 - Modell trainieren
   
   ```bash
-  python training.py <path_to_csv>.csv <path_to_model_folder> <seed>
+  python main.py <path_to_csv>.csv <path_to_model_folder> <seed>
   ```
   
   - initialisiert den Zufallsgenerator mit `<seed>` für Reproduzierbarkeit der Ergebnisse
@@ -80,7 +80,7 @@ Der beste Test des Modells wies folgende Werte auf:
 |  | Naive Bayes | Precision: 0.6941<br>Recall: 0.6131<br>F1 Score: 0.6376 |
 |  | Random Forest | Precision: 0.6960<br>Recall: 0.6480<br>F1 Score: 0.6663 |
 |  | Stacking CLF | Precision: 0.7269<br>Recall: 0.6313<br>F1 Score: 0.6596 |
-| Fold 3 | SVC | Precision: 0.6453<br><br>Recall: 0.6421<br>F1 Score: 0.6389 |
+| Fold 3 | SVC | Precision: 0.6453<br>Recall: 0.6421<br>F1 Score: 0.6389 |
 |  | Logistische Regression | Precision: 0.6749<br>Recall: 0.6545<br>F1 Score: 0.6625 |
 |  | Naive Bayes | Precision: 0.6998<br>Recall: 0.6198<br>F1 Score: 0.6448 |
 |  | Random Forest | Precision: 0.6911<br>Recall: 0.6517<br>F1 Score: 0.6673 |
