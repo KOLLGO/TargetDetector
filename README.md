@@ -64,6 +64,7 @@ pip install -r requirements.txt
 - Das Modell zu speichern, um es dann einzusetzen wäre im Sinne einer Shared Task, entfällt aber aufgrund der Aufgabenstellung.
 
 # Testergebnisse
+## Finaler Test
 Der beste Test des Modells wies folgende Werte auf:
 | Komponente | Wert | Ergebnis |
 | --- | --- | --- |
@@ -108,3 +109,48 @@ Der beste Test des Modells wies folgende Werte auf:
 |  | Naive Bayes | Average precision: 0.7000 (+/- 0.0068)<br>Average recall: 0.6163 (+/- 0.0052)<br>Average f1 score: 0.6420 (+/- 0.0059) |
 |  | Random Forest | Average precision: 0.6925 (+/- 0.0026)<br>Average recall: 0.6494 (+/- 0.0047)<br>Average f1 score: 0.6665 (+/- 0.0037) |
 |  | Stacking CLF | Average precision: 0.7331 (+/- 0.0067)<br>Average recall: 0.6409 (+/- 0.0064)<br>Average f1 score: 0.6694 (+/- 0.0069) |
+
+## Test ohne Preprocessing
+| Komponente | Wert | Ergebnis |
+| --- | --- | --- |
+| Notizen | Ohne | ich, mir, mein, meine, meiner, meines, meinen, meinem<br>Preprocessing|
+| Größe Datensatz | full | 14470 |
+| TF-IDF Vectorizer | Dimensionalität | 10.000 (10k) → top 10k |
+|  | min. Vorkommen eines Wortes | 1 |
+|  | sublinear | logarithmische Skalierung |
+|  | Normalisierung | L2 |
+| Seed | 42 |  |
+| Grad Oversampling | kein Oversampling |  |
+| Inner k (für k-Fold-CV) | 3 |  |
+| Outer k (für k-Fold-CV) | 5 |  |
+| **————————** | **Ergebnisse** | **———————————————** |
+| Fold 1 | SVC | Precision: 0.6851<br>Recall: 0.6490<br>F1 Score: 0.6642 |
+|  | Logistische Regression | Precision: 0.6646<br>Recall: 0.6756<br>F1 Score: 0.6675 |
+|  | Naive Bayes | Precision: 0.7216<br>Recall: 0.6270<br>F1 Score: 0.6569 |
+|  | Random Forest | Precision: 0.6803<br>Recall: 0.6384<br>F1 Score: 0.6535 |
+|  | Stacking CLF | Precision: 0.7413<br>Recall: 0.6336<br>F1 Score: 0.6634 |
+| Fold 2 | SVC | Precision: 0.6706<br>Recall: 0.6541<br>F1 Score: 0.6575 |
+|  | Logistische Regression | Precision: 0.6507<br>Recall: 0.6540<br>F1 Score: 0.6513 |
+|  | Naive Bayes | Precision: 0.6943<br>Recall: 0.6105<br>F1 Score: 0.6369 |
+|  | Random Forest | Precision: 0.6814<br>Recall: 0.6342<br>F1 Score: 0.6518 |
+|  | Stacking CLF | Precision: 0.7369<br>Recall: 0.6302<br>F1 Score: 0.6613 |
+| Fold 3 | SVC | Precision: 0.6415<br>Recall: 0.6479<br>F1 Score: 0.6400 |
+|  | Logistische Regression | Precision: 0.6519<br>Recall: 0.6648<br>F1 Score: 0.6554 |
+|  | Naive Bayes | Precision: 0.6938<br>Recall: 0.6119<br>F1 Score: 0.6385 |
+|  | Random Forest | Precision: 0.6546<br>Recall: 0.6270<br>F1 Score: 0.6352 |
+|  | Stacking CLF | Precision: 0.7322<br>Recall: 0.6219<br>F1 Score: 0.6529 |
+| Fold 4 | SVC | Precision: 0.6544<br>Recall: 0.6622<br>F1 Score: 0.6536 |
+|  | Logistische Regression | Precision: 0.6611<br>Recall: 0.6665<br>F1 Score: 0.6614 |
+|  | Naive Bayes | Precision: 0.7032<br>Recall: 0.6216<br>F1 Score: 0.6487 |
+|  | Random Forest | Precision: 0.6700<br>Recall: 0.6280<br>F1 Score: 0.6398 |
+|  | Stacking CLF | Precision: 0.7263<br>Recall: 0.6263<br>F1 Score: 0.6574 |
+| Fold 5 | SVC | Precision: 0.6621<br>Recall: 0.6321<br>F1 Score: 0.6449 |
+|  | Logistische Regression | Precision: 0.6510<br>Recall: 0.6569<br>F1 Score: 0.6530 |
+|  | Naive Bayes | Precision: 0.7064<br>Recall: 0.6280<br>F1 Score: 0.6536 |
+|  | Random Forest | Precision: 0.6792<br>Recall: 0.6291<br>F1 Score: 0.6479 |
+|  | Stacking CLF | Precision: 0.7256<br>Recall: 0.6295<br>F1 Score: 0.6584 |
+| Makro-AVG | SVC | Average precision: 0.6627 (+/- 0.0147)<br>Average recall: 0.6491 (+/- 0.0099)<br>Average f1 score: 0.6520 (+/- 0.0087) |
+|  | Logistische Regression | Average precision: 0.6559 (+/- 0.0058)<br>Average recall: 0.6636 (+/- 0.0076)<br>Average f1 score: 0.6577 (+/- 0.0060) |
+|  | Naive Bayes | Average precision: 0.7039 (+/- 0.0101)<br>Average recall: 0.6198 (+/- 0.0073)<br>Average f1 score: 0.6469 (+/- 0.0080) |
+|  | Random Forest | Average precision: 0.6731 (+/- 0.0101)<br>Average recall: 0.6313 (+/- 0.0043)<br>Average f1 score: 0.6456 (+/- 0.0070) |
+|  | Stacking CLF | Average precision: 0.7325 (+/- 0.0061)<br>Average recall: 0.6283 (+/- 0.0040)<br>Average f1 score: 0.6587 (+/- 0.0036) |
