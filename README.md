@@ -19,9 +19,15 @@ Das Programm trainiert ein Modell, um die Zielgruppe von Texten zwischen Individ
 
 - Paper
   
-  Zum Projekt wurde ein Paper verfasst, welches die wissenschaftlichen Hintergründe erklärt, auf denen die Software aufbaut.
+  Zum Projekt wurde ein [Paper](Paper_Target_Detection.pdf) verfasst, welches die wissenschaftlichen Hintergründe erklärt, auf denen die Software aufbaut.
 
-## Systemskizze![Systemskizze](https://github.com/KOLLGO/TargetDetector/blob/e946c86b889a79b7f23a8469c48d9c6126fb40cd/system_sketch.png)
+- Version
+  
+  geschrieben und getestet in Python 3.13
+
+## Systemskizze
+
+![Systemskizze](https://github.com/KOLLGO/TargetDetector/blob/e946c86b889a79b7f23a8469c48d9c6126fb40cd/system_sketch.png)
 
 # Setup
 
@@ -55,7 +61,7 @@ pip install -r requirements.txt
   
   - falls kein Seed angegeben wird, erfolgt Initialisierung zufällig (`None`)
   
-  - nutzt die `<INPUT>.csv` zum Trainieren des Modells (Separator ist `;`, kann in [preprocessing.py](https://github.com/KOLLGO/TargetDetector/blob/0bda2151fd0eb0ffeaa5cd800153949593e59257/preprocessing.py) `data_handling()` angepasst werden)
+  - nutzt die `<INPUT>.csv` zum Trainieren des Modells (Separator ist `;`, kann in [preprocessing.py](preprocessing.py) `data_handling()` angepasst werden)
   
   - speichert den Vectorizer unter `<MODEL>/tfidf_vectorizer.pkl`
   
