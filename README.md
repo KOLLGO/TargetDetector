@@ -4,6 +4,9 @@ Das Programm trainiert ein Modell, um die Zielgruppe von Texten zwischen Individ
 
 # Übersicht
 
+## Poster Overview
+![Poster](poster.png)
+
 ## Besonderheiten
 
 - Entstehung
@@ -27,7 +30,7 @@ Das Programm trainiert ein Modell, um die Zielgruppe von Texten zwischen Individ
 
 ## Systemskizze
 
-![Systemskizze](https://github.com/KOLLGO/TargetDetector/blob/e946c86b889a79b7f23a8469c48d9c6126fb40cd/system_sketch.png)
+![Systemskizze](system_sketch.png)
 
 # Setup
 
